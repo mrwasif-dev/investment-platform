@@ -8,333 +8,280 @@
 </head>
 <body>
 
-<!-- Auth Section -->
-<div id="auth-section">
-  <div class="auth-container" id="login-box">
-    <h2>🚀 Profit 24</h2>
-    <div class="input-group"><input type="text" id="login-username" placeholder="Username"></div>
-    <div class="input-group"><input type="password" id="login-password" placeholder="Password"></div>
-    <button class="btn btn-primary" onclick="login()">Sign In</button>
-    <button class="btn btn-secondary" onclick="showSignup()">Create Account</button>
-  </div>
+<div id="app">
+  <!-- Auth Section -->
+  <div id="auth-page">
+    <div class="auth-card" id="login-card">
+      <div class="logo">💎 Profit 24</div>
+      <p class="subtitle">Secure Investment Platform</p>
+      <div class="input-wrap"><input type="text" id="login-user" placeholder="Username"></div>
+      <div class="input-wrap"><input type="password" id="login-pass" placeholder="Password"></div>
+      <button class="btn-grad" onclick="doLogin()">🚀 Sign In</button>
+      <p class="link" onclick="showSignup()">Create New Account →</p>
+    </div>
 
-  <div class="auth-container hidden" id="signup-box">
-    <h2>✨ Join Now</h2>
-    <div class="input-group"><input type="text" id="signup-username" placeholder="Username"></div>
-    <div class="input-group"><input type="text" id="signup-whatsapp" placeholder="WhatsApp Number"></div>
-    <div class="input-group"><input type="password" id="signup-password" placeholder="Password"></div>
-    <div class="input-group"><input type="text" id="signup-referral" placeholder="Referral Code (Optional)"></div>
-    <button class="btn btn-primary" onclick="signup()">Sign Up</button>
-    <button class="btn btn-secondary" onclick="showLogin()">Back to Login</button>
-  </div>
-</div>
-
-<!-- Dashboard Section -->
-<div id="dashboard-section" class="dashboard hidden">
-  <div class="header-card">
-    <h2 id="welcome-msg">Welcome!</h2>
-    <div class="balance-display" id="user-balance">PKR 0</div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="value" id="stat-today">0</div><div class="label">Today's Profit</div></div>
-      <div class="stat-card"><div class="value" id="stat-invested">0</div><div class="label">Total Invested</div></div>
-      <div class="stat-card"><div class="value" id="stat-earned">0</div><div class="label">Total Earned</div></div>
-      <div class="stat-card"><div class="value" id="stat-referrals">0</div><div class="label">Referrals</div></div>
+    <div class="auth-card hidden" id="signup-card">
+      <div class="logo">✨ Join Now</div>
+      <p class="subtitle">Start Earning Daily</p>
+      <div class="input-wrap"><input type="text" id="signup-user" placeholder="Username"></div>
+      <div class="input-wrap"><input type="text" id="signup-wa" placeholder="WhatsApp Number"></div>
+      <div class="input-wrap"><input type="password" id="signup-pass" placeholder="Password"></div>
+      <div class="input-wrap"><input type="text" id="signup-ref" placeholder="Referral Code (Optional)"></div>
+      <button class="btn-grad" onclick="doSignup()">✨ Sign Up</button>
+      <p class="link" onclick="showLogin()">← Back to Login</p>
     </div>
   </div>
 
-  <div class="menu-grid">
-    <div class="menu-item" onclick="showPlans()"><div class="icon">💰</div><div class="text">Deposit</div></div>
-    <div class="menu-item" onclick="showWithdraw()"><div class="icon">💸</div><div class="text">Widraw</div></div>
-    <div class="menu-item" onclick="viewMyPlan()"><div class="icon">📋</div><div class="text">My Plan</div></div>
-    <div class="menu-item" onclick="viewDeposits()"><div class="icon">📥</div><div class="text">Deposit Logs</div></div>
-    <div class="menu-item" onclick="viewWithdrawals()"><div class="icon">📤</div><div class="text">Widraw Logs</div></div>
-    <div class="menu-item" onclick="viewTransactions()"><div class="icon">📊</div><div class="text">History</div></div>
-    <div class="menu-item" onclick="viewTeam()"><div class="icon">👥</div><div class="text">My Team</div></div>
-  </div>
-
-  <div class="referral-box">
-    <p style="margin-bottom:10px;">🔗 Your Referral Link:</p>
-    <div class="referral-link" id="referral-link"></div>
-    <button class="btn btn-secondary" onclick="copyReferral()">📋 Copy Link</button>
-  </div>
-
-  <div style="display:flex; gap:10px; margin-top:20px;">
-    <button class="btn btn-secondary" onclick="viewLeaderboard()">🏆 Leaderboard</button>
-    <button class="btn btn-secondary" onclick="viewFAQs()">❓ FAQ</button>
-  </div>
-
-  <button class="btn btn-danger" onclick="logout()" style="margin-top:20px;">🚪 Logout</button>
-</div>
-
-<!-- Plans Section -->
-<div id="plans-section" class="page-container hidden">
-  <button class="back-btn" onclick="goDashboard()">← Back</button>
-  <h2 style="text-align:center; margin:20px 0;">📋 Investment Plans</h2>
-  <div class="plans-container" id="plans-list"></div>
-  
-  <div id="deposit-form" class="section-card hidden">
-    <h3>💳 Deposit</h3>
-    <p style="margin:10px 0;">Plan Amount: <strong>PKR <span id="selected-amount"></span></strong></p>
-    <div class="input-group">
-      <select id="account-type" onchange="showAccountDetails()">
-        <option value="">-- Select Payment Method --</option>
-        <option value="easypaisa">Easypaisa</option>
-        <option value="jazzcash">JazzCash</option>
-      </select>
+  <!-- Dashboard -->
+  <div id="dashboard-page" class="hidden">
+    <div class="header glass">
+      <h2 id="dash-user">Welcome!</h2>
+      <div class="balance">PKR <span id="dash-balance">0</span></div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="s-val" id="s-today">0</div><div class="s-lbl">Today</div></div>
+        <div class="stat-box"><div class="s-val" id="s-invested">0</div><div class="s-lbl">Invested</div></div>
+        <div class="stat-box"><div class="s-val" id="s-earned">0</div><div class="s-lbl">Earned</div></div>
+        <div class="stat-box"><div class="s-val" id="s-refs">0</div><div class="s-lbl">Referrals</div></div>
+      </div>
     </div>
-    <div id="account-details" class="hidden"></div>
-    <div class="input-group"><input type="file" id="screenshot" accept="image/*"></div>
-    <div class="input-group"><input type="text" id="tx-id" placeholder="Transaction ID"></div>
-    <button class="btn btn-primary" onclick="submitDeposit()">Submit Deposit</button>
-  </div>
-</div>
 
-<!-- Withdraw Section -->
-<div id="withdraw-section" class="page-container hidden">
-  <button class="back-btn" onclick="goDashboard()">← Back</button>
-  <div class="section-card">
-    <h2>💸 Withdraw</h2>
-    <div class="input-group">
-      <select id="wd-type">
+    <div class="menu-grid">
+      <div class="menu-card" onclick="showPlansPage()"><div class="m-icon">💰</div>Deposit</div>
+      <div class="menu-card" onclick="showWithdrawPage()"><div class="m-icon">💸</div>Widraw</div>
+      <div class="menu-card" onclick="viewPlan()"><div class="m-icon">📋</div>My Plan</div>
+      <div class="menu-card" onclick="showHistory('deposits')"><div class="m-icon">📥</div>Deposits</div>
+      <div class="menu-card" onclick="showHistory('withdrawals')"><div class="m-icon">📤</div>Widraws</div>
+      <div class="menu-card" onclick="showHistory('all')"><div class="m-icon">📊</div>History</div>
+      <div class="menu-card" onclick="showTeam()"><div class="m-icon">👥</div>My Team</div>
+    </div>
+
+    <div class="ref-box glass">
+      <p>🔗 Your Referral Link:</p>
+      <code id="ref-link">Loading...</code>
+      <button class="btn-sm" onclick="copyRef()">📋 Copy</button>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="btn-outline" onclick="showLeaderboard()">🏆 Leaderboard</button>
+      <button class="btn-outline" onclick="showFaqs()">❓ FAQ</button>
+      <button class="btn-outline btn-red" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <!-- Plans Page -->
+  <div id="plans-page" class="hidden page">
+    <button class="back-btn" onclick="goDashboard()">← Back</button>
+    <h2 class="page-title">📋 Investment Plans</h2>
+    <div class="plans-grid" id="plans-grid"></div>
+
+    <div id="deposit-form" class="hidden glass" style="margin-top:20px; padding:20px;">
+      <h3>💳 Deposit - <span id="sel-plan-name"></span></h3>
+      <p>Amount: <strong>PKR <span id="sel-plan-amt"></span></strong></p>
+      <select id="dep-acc-type" onchange="showAcc()" class="input-wrap" style="width:100%;">
         <option value="">-- Select Method --</option>
         <option value="easypaisa">Easypaisa</option>
         <option value="jazzcash">JazzCash</option>
       </select>
+      <div id="acc-details" class="hidden"></div>
+      <input type="file" id="dep-ss" class="input-wrap" style="width:100%;" accept="image/*">
+      <input type="text" id="dep-txid" class="input-wrap" style="width:100%;" placeholder="Transaction ID">
+      <button class="btn-grad" onclick="submitDeposit()">Submit Deposit</button>
     </div>
-    <div class="input-group"><input type="text" id="wd-number" placeholder="Account Number"></div>
-    <div class="input-group"><input type="text" id="wd-title" placeholder="Account Title"></div>
-    <div class="input-group"><input type="number" id="wd-amount" placeholder="Amount (Min: 30)"></div>
-    <button class="btn btn-primary" onclick="submitWithdraw()">Send Request</button>
+  </div>
+
+  <!-- Withdraw Page -->
+  <div id="withdraw-page" class="hidden page">
+    <button class="back-btn" onclick="goDashboard()">← Back</button>
+    <div class="glass" style="padding:25px;">
+      <h2>💸 Withdraw</h2>
+      <select id="wd-type" class="input-wrap" style="width:100%;"><option value="">-- Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+      <input type="text" id="wd-num" class="input-wrap" style="width:100%;" placeholder="Account Number">
+      <input type="text" id="wd-title" class="input-wrap" style="width:100%;" placeholder="Account Title">
+      <input type="number" id="wd-amt" class="input-wrap" style="width:100%;" placeholder="Amount (Min: 30)">
+      <button class="btn-grad" onclick="submitWithdraw()">Send Request</button>
+    </div>
+  </div>
+
+  <!-- History Page -->
+  <div id="history-page" class="hidden page">
+    <button class="back-btn" onclick="goDashboard()">← Back</button>
+    <h2 id="hist-title"></h2>
+    <div id="hist-content"></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="leaderboard-page" class="hidden page">
+    <button class="back-btn" onclick="goDashboard()">← Back</button>
+    <h2>🏆 Leaderboard</h2>
+    <div class="glass" style="padding:20px;"><h3>Top Investors</h3><div id="top-inv"></div></div>
+    <div class="glass" style="padding:20px; margin-top:15px;"><h3>Top Referrers</h3><div id="top-ref"></div></div>
+  </div>
+
+  <!-- FAQ -->
+  <div id="faq-page" class="hidden page">
+    <button class="back-btn" onclick="goDashboard()">← Back</button>
+    <h2>❓ FAQ</h2>
+    <div id="faq-list"></div>
   </div>
 </div>
 
-<!-- History Section -->
-<div id="history-section" class="page-container hidden">
-  <button class="back-btn" onclick="goDashboard()">← Back</button>
-  <h2 id="history-title" style="margin-bottom:20px;"></h2>
-  <div id="history-content"></div>
-</div>
-
-<!-- Leaderboard Section -->
-<div id="leaderboard-section" class="page-container hidden">
-  <button class="back-btn" onclick="goDashboard()">← Back</button>
-  <h2 style="text-align:center; margin:20px 0;">🏆 Leaderboard</h2>
-  <div class="section-card"><h3>Top Investors</h3><div id="top-investors"></div></div>
-  <div class="section-card"><h3>Top Referrers</h3><div id="top-referrers"></div></div>
-</div>
-
-<!-- FAQ Section -->
-<div id="faq-section" class="page-container hidden">
-  <button class="back-btn" onclick="goDashboard()">← Back</button>
-  <h2 style="text-align:center; margin:20px 0;">❓ FAQ</h2>
-  <div id="faq-list"></div>
-</div>
-
-<a href="https://wa.me/923000000000" class="whatsapp-float" target="_blank">💬</a>
-<div id="notification" class="notification" style="display:none;"></div>
+<a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
+<div id="toast" class="toast"></div>
 
 <script>
-const API = '';
-let token = localStorage.getItem('token');
-let selectedPlan = null;
+const API='';let token=localStorage.getItem('token'),selPlan=null,accData=null;
 
-function showSignup() { document.getElementById('login-box').classList.add('hidden'); document.getElementById('signup-box').classList.remove('hidden'); }
-function showLogin() { document.getElementById('signup-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); }
+function $(id){return document.getElementById(id)}
+function hideAll(){['auth-page','dashboard-page','plans-page','withdraw-page','history-page','leaderboard-page','faq-page'].forEach(id=>$(id).classList.add('hidden'))}
+function toast(m,t='info'){const el=$('toast');el.textContent=m;el.className='toast '+t;el.style.display='block';setTimeout(()=>el.style.display='none',3000)}
 
-function hideAll() {
-  ['auth-section','dashboard-section','plans-section','withdraw-section','history-section','leaderboard-section','faq-section']
-    .forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+function showSignup(){$(login-card).classList.add('hidden');$(signup-card).classList.remove('hidden')}
+function showLogin(){$(signup-card).classList.add('hidden');$(login-card).classList.remove('hidden')}
+function goDashboard(){hideAll();$('dashboard-page').classList.remove('hidden');loadDash()}
+
+async function doSignup(){
+  const d={username:$('signup-user').value,whatsapp:$('signup-wa').value,password:$('signup-pass').value,referralCode:$('signup-ref').value};
+  try{
+    const r=await fetch(API+'/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    const j=await r.json();
+    if(r.ok){localStorage.setItem('token',j.token);token=j.token;goDashboard();toast('Welcome! 🎉','success')}
+    else toast(j.error,'error')
+  }catch(e){toast('Error: '+e.message,'error')}
 }
 
-function goDashboard() { hideAll(); document.getElementById('dashboard-section').classList.remove('hidden'); loadDashboard(); }
-
-function notify(msg, type='info') {
-  const n = document.getElementById('notification');
-  n.textContent = msg; n.className = 'notification ' + type; n.style.display = 'block';
-  setTimeout(() => n.style.display = 'none', 4000);
+async function doLogin(){
+  const d={username:$('login-user').value,password:$('login-pass').value};
+  try{
+    const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    const j=await r.json();
+    if(r.ok){localStorage.setItem('token',j.token);token=j.token;goDashboard();toast('Welcome back! 👋','success')}
+    else toast(j.error,'error')
+  }catch(e){toast('Error: '+e.message,'error')}
 }
 
-async function signup() {
-  const data = {
-    username: document.getElementById('signup-username').value,
-    whatsapp: document.getElementById('signup-whatsapp').value,
-    password: document.getElementById('signup-password').value,
-    referralCode: document.getElementById('signup-referral').value
-  };
-  try {
-    const res = await fetch(API + '/api/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-    const result = await res.json();
-    if(res.ok) { localStorage.setItem('token', result.token); token = result.token; hideAll(); document.getElementById('dashboard-section').classList.remove('hidden'); loadDashboard(); notify('Welcome! 🎉', 'success'); }
-    else notify(result.error, 'error');
-  } catch(e) { notify('Error: ' + e.message, 'error'); }
+function logout(){localStorage.removeItem('token');token=null;hideAll();$('auth-page').classList.remove('hidden');showLogin()}
+
+async function loadDash(){
+  try{
+    const r=await fetch(API+'/api/dashboard',{headers:{'Authorization':token}});
+    const d=await r.json();
+    $('dash-user').textContent='👋 '+d.username;
+    $('dash-balance').textContent=(d.balance||0).toFixed(2);
+    $('s-today').textContent='PKR '+(d.todayProfit||0).toFixed(2);
+    $('s-invested').textContent='PKR '+(d.totalInvested||0).toFixed(0);
+    $('s-earned').textContent='PKR '+(d.totalEarned||0).toFixed(0);
+    $('s-refs').textContent=d.referralCount||0;
+    $('ref-link').textContent=window.location.origin+'?ref='+d.referralCode;
+  }catch(e){toast('Error loading dashboard','error')}
 }
 
-async function login() {
-  const data = { username: document.getElementById('login-username').value, password: document.getElementById('login-password').value };
-  try {
-    const res = await fetch(API + '/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-    const result = await res.json();
-    if(res.ok) { localStorage.setItem('token', result.token); token = result.token; hideAll(); document.getElementById('dashboard-section').classList.remove('hidden'); loadDashboard(); notify('Welcome back! 👋', 'success'); }
-    else notify(result.error, 'error');
-  } catch(e) { notify('Error: ' + e.message, 'error'); }
-}
-
-function logout() { localStorage.removeItem('token'); token = null; hideAll(); document.getElementById('auth-section').classList.remove('hidden'); showLogin(); }
-
-async function loadDashboard() {
-  try {
-    const res = await fetch(API + '/api/dashboard', { headers:{'Authorization':token} });
-    const d = await res.json();
-    document.getElementById('welcome-msg').textContent = '👋 Welcome, ' + d.username;
-    document.getElementById('user-balance').textContent = 'PKR ' + (d.balance || 0).toFixed(2);
-    document.getElementById('stat-today').textContent = 'PKR ' + (d.todayProfit || 0).toFixed(2);
-    document.getElementById('stat-invested').textContent = 'PKR ' + (d.totalInvested || 0).toFixed(0);
-    document.getElementById('stat-earned').textContent = 'PKR ' + (d.totalEarned || 0).toFixed(0);
-    document.getElementById('stat-referrals').textContent = d.referralCount || 0;
-    document.getElementById('referral-link').textContent = window.location.origin + '?ref=' + d.referralCode;
-  } catch(e) { notify('Error loading dashboard', 'error'); }
-}
-
-async function showPlans() {
-  hideAll(); document.getElementById('plans-section').classList.remove('hidden');
-  try {
-    const res = await fetch(API + '/api/plans', { headers:{'Authorization':token} });
-    const plans = await res.json();
-    document.getElementById('plans-list').innerHTML = plans.map(p => `
-      <div class="plan-card" onclick="selectPlan(${p.planId}, ${p.amount}, '${p.name}')">
-        <h3>${p.name}</h3>
-        <div class="amount">PKR ${p.amount}</div>
-        <div class="detail">📈 ${p.dailyProfit}% Daily | 📅 ${p.duration} Days</div>
-        <div class="detail">💎 Total: PKR ${(p.amount * p.dailyProfit / 100 * p.duration).toFixed(0)}</div>
+async function showPlansPage(){
+  hideAll();$('plans-page').classList.remove('hidden');
+  try{
+    const r=await fetch(API+'/api/plans',{headers:{'Authorization':token}});
+    const plans=await r.json();
+    $('plans-grid').innerHTML=plans.map(p=>`
+      <div class="plan-card glass" onclick="selectPlan(${p.planId},${p.amount},'${p.name}')">
+        <div class="plan-name">${p.name}</div>
+        <div class="plan-amt">PKR ${p.amount}</div>
+        <div class="plan-info">📈 ${p.dailyProfit}% Daily | 📅 ${p.duration} Days</div>
+        <div class="plan-info">💎 Total: PKR ${(p.amount*p.dailyProfit/100*p.duration).toFixed(0)}</div>
       </div>
     `).join('');
-  } catch(e) { notify('Error loading plans', 'error'); }
+  }catch(e){toast('Error','error')}
 }
 
-function selectPlan(id, amount, name) {
-  selectedPlan = { id, amount, name };
-  document.getElementById('selected-amount').textContent = amount;
-  document.getElementById('deposit-form').classList.remove('hidden');
-  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+function selectPlan(id,amt,name){
+  selPlan={id,amt,name};
+  document.querySelectorAll('.plan-card').forEach(c=>c.classList.remove('selected'));
   event.target.closest('.plan-card').classList.add('selected');
+  $('sel-plan-name').textContent=name;
+  $('sel-plan-amt').textContent=amt;
+  $('deposit-form').classList.remove('hidden');
 }
 
-async function showAccountDetails() {
-  const type = document.getElementById('account-type').value;
-  if(!type) return;
-  try {
-    const res = await fetch(API + '/api/deposit-accounts', { headers:{'Authorization':token} });
-    const accs = await res.json();
-    const acc = accs[type];
-    document.getElementById('account-details').classList.remove('hidden');
-    document.getElementById('account-details').innerHTML = `
-      <div class="section-card">
-        <p><strong>Account Type:</strong> ${type.toUpperCase()}</p>
-        <p><strong>Number:</strong> ${acc.number} <button class="btn btn-secondary" style="padding:5px 10px; width:auto;" onclick="copyText('${acc.number}')">Copy</button></p>
-        <p><strong>Title:</strong> ${acc.title}</p>
-      </div>`;
-  } catch(e) { notify('Error', 'error'); }
+async function showAcc(){
+  const t=$('dep-acc-type').value;if(!t)return;
+  if(!accData){
+    const r=await fetch(API+'/api/deposit-accounts',{headers:{'Authorization':token}});
+    accData=await r.json();
+  }
+  const a=accData[t];
+  $('acc-details').classList.remove('hidden');
+  $('acc-details').innerHTML=`<div class="glass" style="padding:15px;"><p>📱 ${t.toUpperCase()}: <strong>${a.number}</strong> <button class="btn-sm" onclick="navigator.clipboard.writeText('${a.number}');toast('Copied!','success')">📋</button></p><p>📛 ${a.title}</p></div>`;
 }
 
-async function submitDeposit() {
-  if(!selectedPlan) return notify('Select a plan first!', 'error');
-  const fd = new FormData();
-  fd.append('planId', selectedPlan.id);
-  fd.append('accountType', document.getElementById('account-type').value);
-  fd.append('txId', document.getElementById('tx-id').value);
-  const file = document.getElementById('screenshot').files[0];
-  if(file) fd.append('screenshot', file);
-  try {
-    const res = await fetch(API + '/api/deposit', { method:'POST', headers:{'Authorization':token}, body:fd });
-    const result = await res.json();
-    if(res.ok) { notify('Deposit submitted! ✅', 'success'); goDashboard(); }
-    else notify(result.error, 'error');
-  } catch(e) { notify('Error', 'error'); }
+async function submitDeposit(){
+  if(!selPlan)return toast('Select a plan!','error');
+  const fd=new FormData();
+  fd.append('planId',selPlan.id);fd.append('accountType',$('dep-acc-type').value);
+  fd.append('txId',$('dep-txid').value);fd.append('screenshot',$('dep-ss').files[0]);
+  try{
+    const r=await fetch(API+'/api/deposit',{method:'POST',headers:{'Authorization':token},body:fd});
+    const j=await r.json();
+    if(r.ok){toast('Deposit submitted! ✅','success');goDashboard()}
+    else toast(j.error,'error')
+  }catch(e){toast('Error','error')}
 }
 
-function showWithdraw() { hideAll(); document.getElementById('withdraw-section').classList.remove('hidden'); }
-
-async function submitWithdraw() {
-  const data = {
-    accountType: document.getElementById('wd-type').value,
-    accountNumber: document.getElementById('wd-number').value,
-    accountTitle: document.getElementById('wd-title').value,
-    amount: parseFloat(document.getElementById('wd-amount').value)
-  };
-  try {
-    const res = await fetch(API + '/api/withdraw', { method:'POST', headers:{'Content-Type':'application/json','Authorization':token}, body:JSON.stringify(data) });
-    const result = await res.json();
-    if(res.ok) { notify('Withdrawal request submitted! ✅', 'success'); goDashboard(); }
-    else notify(result.error, 'error');
-  } catch(e) { notify('Error', 'error'); }
+function showWithdrawPage(){hideAll();$('withdraw-page').classList.remove('hidden')}
+async function submitWithdraw(){
+  const d={accountType:$('wd-type').value,accountNumber:$('wd-num').value,accountTitle:$('wd-title').value,amount:parseFloat($('wd-amt').value)};
+  try{
+    const r=await fetch(API+'/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(d)});
+    const j=await r.json();
+    if(r.ok){toast('Withdrawal submitted! ✅','success');goDashboard()}
+    else toast(j.error,'error')
+  }catch(e){toast('Error','error')}
 }
 
-async function viewMyPlan() {
-  try {
-    const res = await fetch(API + '/api/dashboard', { headers:{'Authorization':token} });
-    const d = await res.json();
-    if(d.activePlan) {
-      notify(`${d.activePlan.name}\nDaily: PKR ${d.activePlan.dailyProfit}\nDays: ${d.activePlan.profitDays}/60\nRemaining: ${60 - d.activePlan.profitDays} days`, 'info');
-    } else notify('No active plan! Invest first.', 'error');
-  } catch(e) { notify('Error', 'error'); }
+async function viewPlan(){
+  const r=await fetch(API+'/api/dashboard',{headers:{'Authorization':token}});
+  const d=await r.json();
+  if(d.activePlan){toast(`${d.activePlan.name}\nDaily: PKR ${d.activePlan.dailyProfit}\nDay: ${d.activePlan.profitDays}/60`,'info')}
+  else toast('No active plan!','error')
 }
 
-async function viewDeposits() { await showHistory('deposit', 'Deposit History'); }
-async function viewWithdrawals() { await showHistory('withdraw', 'Withdrawal History'); }
-async function viewTransactions() { await showHistory('all', 'Transaction History'); }
-
-async function showHistory(type, title) {
-  hideAll(); document.getElementById('history-section').classList.remove('hidden');
-  document.getElementById('history-title').textContent = '📋 ' + title;
-  try {
-    const url = type === 'all' ? '/api/transactions' : (type === 'deposit' ? '/api/deposits' : '/api/withdrawals');
-    const res = await fetch(API + url, { headers:{'Authorization':token} });
-    const items = await res.json();
-    document.getElementById('history-content').innerHTML = items.length ? items.map(i => `
-      <div class="history-item ${i.status}">
-        <strong>${i.type.toUpperCase()}</strong> | PKR ${i.amount} | <span style="color:${i.status==='approved'?'#48bb78':i.status==='pending'?'#f6d365':'#f56565'}">${i.status}</span>
-        <br><small>${new Date(i.createdAt).toLocaleDateString()}</small>
-      </div>`).join('') : '<p>No records found</p>';
-  } catch(e) { notify('Error', 'error'); }
+async function showHistory(t){
+  hideAll();$('history-page').classList.remove('hidden');
+  $('hist-title').textContent=t==='deposits'?'📥 Deposits':t==='withdrawals'?'📤 Withdrawals':'📊 All Transactions';
+  const url=t==='deposits'?'/api/deposits':t==='withdrawals'?'/api/withdrawals':'/api/transactions';
+  const r=await fetch(API+url,{headers:{'Authorization':token}});
+  const items=await r.json();
+  $('hist-content').innerHTML=items.length?items.map(i=>`
+    <div class="hist-item ${i.status}">
+      <strong>${i.type.toUpperCase()}</strong> | PKR ${i.amount} | <span style="color:${i.status==='approved'?'#4ade80':i.status==='rejected'?'#f87171':'#fbbf24'}">${i.status}</span>
+      <br><small>${new Date(i.createdAt).toLocaleDateString()}</small>
+    </div>`).join(''):'<p>No records</p>';
 }
 
-async function viewTeam() {
-  hideAll(); document.getElementById('history-section').classList.remove('hidden');
-  document.getElementById('history-title').textContent = '👥 My Team';
-  try {
-    const res = await fetch(API + '/api/team', { headers:{'Authorization':token} });
-    const data = await res.json();
-    document.getElementById('history-content').innerHTML = `
-      <p style="margin-bottom:15px;">Total Members: <strong>${data.teamCount}</strong></p>
-      ${data.team.map(m => `<div class="history-item"><strong>${m.username}</strong> | Invested: PKR ${m.totalInvested} | Joined: ${new Date(m.joinedAt).toLocaleDateString()}</div>`).join('')}`;
-  } catch(e) { notify('Error', 'error'); }
+async function showTeam(){
+  hideAll();$('history-page').classList.remove('hidden');
+  $('hist-title').textContent='👥 My Team';
+  const r=await fetch(API+'/api/team',{headers:{'Authorization':token}});
+  const d=await r.json();
+  $('hist-content').innerHTML=`<p>Total: <strong>${d.teamCount}</strong> members</p>`+d.team.map(m=>`<div class="hist-item"><strong>${m.username}</strong> | PKR ${m.totalInvested||0} | ${new Date(m.createdAt).toLocaleDateString()}</div>`).join('');
 }
 
-async function viewLeaderboard() {
-  hideAll(); document.getElementById('leaderboard-section').classList.remove('hidden');
-  try {
-    const res = await fetch(API + '/api/leaderboard', { headers:{'Authorization':token} });
-    const data = await res.json();
-    document.getElementById('top-investors').innerHTML = data.topInvestors.map((u,i) => `<div class="history-item">${i+1}. ${u.username} - PKR ${u.totalInvested}</div>`).join('') || '<p>No data</p>';
-    document.getElementById('top-referrers').innerHTML = data.topReferrers.map((u,i) => `<div class="history-item">${i+1}. ${u.username} - ${u.count} referrals</div>`).join('') || '<p>No data</p>';
-  } catch(e) { notify('Error', 'error'); }
+async function showLeaderboard(){
+  hideAll();$('leaderboard-page').classList.remove('hidden');
+  const r=await fetch(API+'/api/leaderboard',{headers:{'Authorization':token}});
+  const d=await r.json();
+  $('top-inv').innerHTML=d.topInvestors.map((u,i)=>`<p>${i+1}. ${u.username} - PKR ${u.totalInvested}</p>`).join('');
+  $('top-ref').innerHTML=d.topReferrers.map((u,i)=>`<p>${i+1}. ${u.username} - ${u.count} refs</p>`).join('');
 }
 
-async function viewFAQs() {
-  hideAll(); document.getElementById('faq-section').classList.remove('hidden');
-  try {
-    const res = await fetch(API + '/api/faqs');
-    const faqs = await res.json();
-    document.getElementById('faq-list').innerHTML = faqs.map(f => `<div class="section-card"><h3>${f.question}</h3><p>${f.answer}</p></div>`).join('') || '<p>No FAQs</p>';
-  } catch(e) { notify('Error', 'error'); }
+async function showFaqs(){
+  hideAll();$('faq-page').classList.remove('hidden');
+  const r=await fetch(API+'/api/faqs');
+  const faqs=await r.json();
+  $('faq-list').innerHTML=faqs.map(f=>`<div class="glass" style="padding:20px;margin:10px 0;"><h3>${f.question}</h3><p>${f.answer}</p></div>`).join('');
 }
 
-function copyReferral() { copyText(document.getElementById('referral-link').textContent); }
-function copyText(t) { navigator.clipboard.writeText(t); notify('Copied! 📋', 'success'); }
+function copyRef(){navigator.clipboard.writeText($('ref-link').textContent);toast('Copied! 📋','success')}
 
 // Init
-if(token) { hideAll(); document.getElementById('dashboard-section').classList.remove('hidden'); loadDashboard(); }
+if(token){hideAll();$('dashboard-page').classList.remove('hidden');loadDash()}
 </script>
-
 </body>
 </html>
