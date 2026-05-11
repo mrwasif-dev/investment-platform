@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Auth Section -->
+    <div id="auth-section">
+        <div id="signin-form" class="form-container">
+            <h2>Sign In</h2>
+            <input type="text" id="login-username" placeholder="Username" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button onclick="login()">Sign In</button>
+            <p onclick="showSignup()" style="cursor: pointer; color: blue;">Don't have account? Sign Up</p>
+        </div>
+
+        <div id="signup-form" class="form-container" style="display: none;">
+            <h2>Sign Up</h2>
+            <input type="text" id="signup-username" placeholder="Username" required>
+            <input type="text" id="signup-whatsapp" placeholder="WhatsApp Number" required>
+            <input type="password" id="signup-password" placeholder="Password" required>
+            <input type="text" id="signup-referral" placeholder="Referral Code (Optional)">
+            <button onclick="signup()">Sign Up</button>
+            <p onclick="showSignin()" style="cursor: pointer; color: blue;">Already have account? Sign In</p>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" style="display: none;">
+        <div class="header">
+            <h2 id="welcome-msg"></h2>
+            <p>Balance: PKR <span id="user-balance">0</span></p>
+        </div>
+
+        <div class="dashboard-grid">
+            <button onclick="showPlans()">Deposit</button>
+            <button onclick="showWithdraw()">Widraw</button>
+            <button onclick="viewMyPlan()">My Plan</button>
+            <button onclick="viewDeposits()">Deposit Logs</button>
+            <button onclick="viewWithdrawals()">Widraw Logs</button>
+            <button onclick="viewTransactions()">Transaction History</button>
+            <button onclick="viewTeam()">My Team</button>
+        </div>
+
+        <div class="info-section">
+            <button onclick="viewLeaderboard()">Leaderboard</button>
+            <button onclick="viewFAQs()">FAQ</button>
+        </div>
+
+        <div class="referral-section">
+            <p>Your Referral Link: <span id="referral-link"></span></p>
+            <button onclick="copyReferral()">Copy Link</button>
+        </div>
+
+        <button onclick="logout()" style="background: red; color: white; margin-top: 20px;">Logout</button>
+    </div>
+
+    <!-- Plans Section -->
+    <div id="plans-section" style="display: none;">
+        <h2>Investment Plans</h2>
+        <div id="plans-list"></div>
+        <div id="deposit-form" style="display: none;">
+            <h3>Deposit</h3>
+            <p>Plan Amount: PKR <span id="selected-plan-amount"></span></p>
+            <div id="deposit-accounts"></div>
+            <select id="account-type" onchange="showDepositAccount()">
+                <option value="">Select Account Type</option>
+                <option value="easypaisa">Easypaisa</option>
+                <option value="jazzcash">JazzCash</option>
+            </select>
+            <div id="account-details" style="display: none;"></div>
+            <input type="file" id="screenshot" accept="image/*">
+            <input type="text" id="tx-id" placeholder="Transaction ID">
+            <button onclick="submitDeposit()">Submit</button>
+        </div>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- Withdraw Section -->
+    <div id="withdraw-section" style="display: none;">
+        <h2>Withdraw</h2>
+        <select id="withdraw-account-type">
+            <option value="">Select Account Type</option>
+            <option value="easypaisa">Easypaisa</option>
+            <option value="jazzcash">JazzCash</option>
+        </select>
+        <input type="text" id="withdraw-account-number" placeholder="Account Number">
+        <input type="text" id="withdraw-account-title" placeholder="Account Title">
+        <input type="number" id="withdraw-amount" placeholder="Amount (Min: 30)">
+        <button onclick="submitWithdraw()">Send Request</button>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- History Sections -->
+    <div id="history-section" style="display: none;">
+        <h2 id="history-title"></h2>
+        <div id="history-content"></div>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div id="leaderboard-section" style="display: none;">
+        <h2>Leaderboard</h2>
+        <h3>Top Investors</h3>
+        <div id="top-investors"></div>
+        <h3>Top Referrers</h3>
+        <div id="top-referrers"></div>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- FAQ Section -->
+    <div id="faq-section" style="display: none;">
+        <h2>FAQ</h2>
+        <div id="faq-list"></div>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- WhatsApp Support Button -->
+    <a href="https://wa.me/258867532400" class="whatsapp-float" target="_blank">💬 WhatsApp</a>
+
+    <div id="notification" class="notification"></div>
+    <script src="script.js"></script>
+</body>
+</html>
