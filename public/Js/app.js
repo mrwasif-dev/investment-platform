@@ -1,77 +1,106 @@
-// ============================================================
-// PROFIT 24 - COMPLETE FRONTEND APP
-// All features: Auth, Dashboard, Deposit, Withdraw, 
-// Fund Transfer, Profile, History, Leaderboard, FAQ, Chat
-// ============================================================
+// PROFIT 24 - COMPLETE WORKING FRONTEND
+var API_URL = '';
+var authToken = localStorage.getItem('p24_token') || null;
+var selectedPlan = null;
+var selectedPaymentMethod = null;
+var accountData = null;
 
-var API = '';
-var token = localStorage.getItem('p24_token') || null;
-var selPlan = null;
-var selPayment = null;
-var accounts = null;
-
+// Utility
 function $(id) { return document.getElementById(id); }
-
-function toast(msg, type) {
+function showToast(msg, type) {
     type = type || 'i';
-    var el = $('toast');
-    el.textContent = msg;
-    el.className = 'toast ' + type;
-    el.style.display = 'block';
-    setTimeout(function() { el.style.display = 'none'; }, 4000);
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.style.display = 'block';
+    setTimeout(function() { t.style.display = 'none'; }, 4000);
 }
-
 function fmt(n) { return (Number(n) || 0).toLocaleString('en-US'); }
-
-function hideAll() {
-    var ids = ['authSection', 'dashSection', 'plansSection', 'paymentSection', 'depositSection', 'withSection', 'transferSection', 'histSection', 'profileSection', 'leadSection', 'faqSection'];
-    ids.forEach(function(id) { var el = $(id); if (el) el.classList.add('hidden'); });
+function hideAllPages() {
+    var pages = ['authSection','dashSection','plansSection','paymentSection','depositSection','withdrawSection','transferSection','historySection','profileSection','leaderboardSection','faqSection'];
+    for (var i = 0; i < pages.length; i++) { var el = $(pages[i]); if (el) el.classList.add('hidden'); }
 }
+function goToDashboard() { hideAllPages(); $('dashSection').classList.remove('hidden'); loadDashboardData(); }
+function goToPlans() { hideAllPages(); $('plansSection').classList.remove('hidden'); loadPlansList(); }
+function goToPayment() { hideAllPages(); $('paymentSection').classList.remove('hidden'); showPaymentPage(); }
 
-function goDash() { hideAll(); $('dashSection').classList.remove('hidden'); loadDash(); }
+// Auth
+function showSignupForm() { $('loginCard').classList.add('hidden'); $('signupCard').classList.remove('hidden'); }
+function showLoginForm() { $('signupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden'); }
 
-// Auth Functions
-function showSignup() { $('loginCard').classList.add('hidden'); $('signupCard').classList.remove('hidden'); }
-function showLogin() { $('signupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden'); }
-
-function doSignup() {
-    var u = $('signupUser').value.trim(), w = $('signupWA').value.trim(), p = $('signupPass').value.trim(), r = $('signupRef').value.trim();
-    if (!u || !w || !p) return toast('All fields required', 'e');
-    if (p.length < 6) return toast('Password: 6+ chars', 'e');
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/signup', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.onload = function() {
-        try { var d = JSON.parse(x.responseText); if (d.success) { token = d.token; localStorage.setItem('p24_token', token); goDash(); toast('Welcome! 🎉', 's'); } else toast(d.error, 'e'); } catch(e) { toast('Error', 'e'); }
+function handleSignup() {
+    var u = $('signupUser').value.trim();
+    var w = $('signupWA').value.trim();
+    var p = $('signupPass').value.trim();
+    var r = $('signupRef').value.trim();
+    if (!u || !w || !p) return showToast('Please fill all required fields', 'error');
+    if (p.length < 6) return showToast('Password must be at least 6 characters', 'error');
+    showToast('Creating account...', 'info');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/signup', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) {
+                authToken = d.token;
+                localStorage.setItem('p24_token', authToken);
+                goToDashboard();
+                showToast('Welcome! Account created successfully! 🎉', 'success');
+            } else {
+                showToast(d.error || 'Registration failed', 'error');
+            }
+        } catch(e) { showToast('Error occurred', 'error'); }
     };
-    x.send(JSON.stringify({ username: u, whatsapp: w, password: p, referralCode: r }));
+    xhr.onerror = function() { showToast('Network error! Please try again.', 'error'); };
+    xhr.send(JSON.stringify({ username: u, whatsapp: w, password: p, referralCode: r }));
 }
 
-function doLogin() {
-    var u = $('loginUser').value.trim(), p = $('loginPass').value.trim();
-    if (!u || !p) return toast('All fields required', 'e');
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/login', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.onload = function() {
-        try { var d = JSON.parse(x.responseText); if (d.success) { token = d.token; localStorage.setItem('p24_token', token); goDash(); toast('Welcome! 👋', 's'); } else toast(d.error, 'e'); } catch(e) { toast('Error', 'e'); }
+function handleLogin() {
+    var u = $('loginUser').value.trim();
+    var p = $('loginPass').value.trim();
+    if (!u || !p) return showToast('Please enter username and password', 'error');
+    showToast('Signing in...', 'info');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/login', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) {
+                authToken = d.token;
+                localStorage.setItem('p24_token', authToken);
+                goToDashboard();
+                showToast('Welcome back! 👋', 'success');
+            } else {
+                showToast(d.error || 'Login failed', 'error');
+            }
+        } catch(e) { showToast('Error occurred', 'error'); }
     };
-    x.send(JSON.stringify({ username: u, password: p }));
+    xhr.onerror = function() { showToast('Network error! Please try again.', 'error'); };
+    xhr.send(JSON.stringify({ username: u, password: p }));
 }
 
-function doLogout() { localStorage.removeItem('p24_token'); token = null; hideAll(); $('authSection').classList.remove('hidden'); showLogin(); toast('Logged out', 'i'); }
+function handleLogout() {
+    localStorage.removeItem('p24_token');
+    authToken = null;
+    hideAllPages();
+    $('authSection').classList.remove('hidden');
+    showLoginForm();
+    showToast('Logged out successfully', 'info');
+}
 
 // Dashboard
-function loadDash() {
-    if (!token) { hideAll(); $('authSection').classList.remove('hidden'); return; }
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/dashboard', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+function loadDashboardData() {
+    if (!authToken) { hideAllPages(); $('authSection').classList.remove('hidden'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/dashboard', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             if (d.success) {
-                $('dashUser').textContent = '👋 ' + d.username;
+                $('dashUser').textContent = '👋 Welcome, ' + d.username;
                 $('dashPID').textContent = d.pid || '---';
                 $('dashBal').textContent = (d.balance || 0).toFixed(2);
                 $('sToday').textContent = 'PKR ' + fmt(d.todayProfit);
@@ -82,346 +111,361 @@ function loadDash() {
                 $('sDepPen').textContent = d.pendingDeposits || 0;
                 $('sWdPen').textContent = d.pendingWithdrawals || 0;
                 $('sWdTotal').textContent = 'PKR ' + fmt(d.totalWithdrawn);
-                $('refLink').textContent = location.origin + '?ref=' + d.referralCode;
-                if (d.profilePic) { $('dashDP').src = d.profilePic; $('dashDP').style.display = 'block'; }
-                // Update withdraw balance display
-                $('wdBalance').textContent = 'PKR ' + (d.balance || 0).toFixed(2);
-                $('tfBalance').textContent = 'PKR ' + (d.balance || 0).toFixed(2);
+                $('refLink').textContent = window.location.origin + '?ref=' + d.referralCode;
             }
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
 // Deposit Flow
-function goDeposit() { hideAll(); $('plansSection').classList.remove('hidden'); loadPlans(); }
-function goPlans() { hideAll(); $('plansSection').classList.remove('hidden'); loadPlans(); }
-function goPayment() { hideAll(); $('paymentSection').classList.remove('hidden'); loadPaymentPage(); }
+function openDeposit() { hideAllPages(); $('plansSection').classList.remove('hidden'); loadPlansList(); }
 
-function loadPlans() {
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/plans', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+function loadPlansList() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/plans', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
-            if (d.success) {
-                var h = '';
-                d.plans.forEach(function(p) {
-                    var tr = p.amount * (p.dailyProfit / 100) * p.duration;
-                    h += '<div class="glass plan-card" onclick="pickPlan(' + p.planId + ',' + p.amount + ',\'' + p.name + '\')"><div class="plan-name">' + p.name + '</div><div class="plan-amount">PKR ' + fmt(p.amount) + '</div><div class="plan-info">📈 ' + p.dailyProfit + '% Daily | 📅 ' + p.duration + ' Days</div><div class="plan-info">💎 Total: PKR ' + fmt(tr) + '</div></div>';
-                });
-                $('plansGrid').innerHTML = h;
+            var d = JSON.parse(xhr.responseText);
+            if (d.success && d.plans) {
+                var html = '';
+                for (var i = 0; i < d.plans.length; i++) {
+                    var p = d.plans[i];
+                    var totalReturn = p.amount * (p.dailyProfit / 100) * p.duration;
+                    html += '<div class="glass plan-card" onclick="choosePlan(' + p.planId + ',' + p.amount + ',\'' + p.name + '\')"><div class="plan-name">' + p.name + '</div><div class="plan-amount">PKR ' + fmt(p.amount) + '</div><div class="plan-info">📈 ' + p.dailyProfit + '% Daily | 📅 ' + p.duration + ' Days</div><div class="plan-info">💎 Total: PKR ' + fmt(totalReturn) + '</div></div>';
+                }
+                $('plansGrid').innerHTML = html;
             }
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
-function pickPlan(id, amt, name) {
-    selPlan = { id: id, amt: amt, name: name };
-    document.querySelectorAll('.plan-card').forEach(function(c) { c.classList.remove('selected'); });
+function choosePlan(id, amt, name) {
+    selectedPlan = { id: id, amt: amt, name: name };
+    // Highlight selected
+    var cards = document.querySelectorAll('.plan-card');
+    for (var i = 0; i < cards.length; i++) { cards[i].classList.remove('selected'); }
     if (event && event.target) { var c = event.target.closest('.plan-card'); if (c) c.classList.add('selected'); }
-    setTimeout(function() { hideAll(); $('paymentSection').classList.remove('hidden'); loadPaymentPage(); }, 300);
+    // Go to payment method
+    setTimeout(function() { hideAllPages(); $('paymentSection').classList.remove('hidden'); showPaymentPage(); }, 300);
 }
 
-function loadPaymentPage() {
-    if (!selPlan) return goPlans();
-    $('payPlanName').textContent = selPlan.name;
-    $('payPlanAmt').textContent = fmt(selPlan.amt);
+function showPaymentPage() {
+    if (!selectedPlan) return goToPlans();
+    $('payPlanName').textContent = selectedPlan.name;
+    $('payPlanAmt').textContent = fmt(selectedPlan.amt);
 }
 
-function selectPayment(method) {
-    selPayment = method;
-    hideAll();
+function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    hideAllPages();
     $('depositSection').classList.remove('hidden');
     $('depMethod').textContent = method.toUpperCase();
-    loadAccInfo(method);
+    loadAccountInfo(method);
 }
 
-function loadAccInfo(method) {
-    if (accounts) { showAccInfo(method); return; }
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/deposit-accounts', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
-        try { var d = JSON.parse(x.responseText); if (d.success) { accounts = d; showAccInfo(method); } } catch(e) { }
+function loadAccountInfo(method) {
+    if (accountData) { showAccountInfo(method); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/deposit-accounts', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
+        try { var d = JSON.parse(xhr.responseText); if (d.success) { accountData = d; showAccountInfo(method); } } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
-function showAccInfo(method) {
-    var a = accounts[method];
-    $('accInfo').innerHTML = '<div class="glass" style="padding:18px;"><p>📱 <strong>' + method.toUpperCase() + '</strong></p><p>🔢 Number: <strong>' + a.number + '</strong> <button class="btn-sm" onclick="navigator.clipboard.writeText(\'' + a.number + '\');toast(\'Copied!\',\'s\')">📋 Copy</button></p><p>📛 Title: <strong>' + a.title + '</strong></p></div>';
+function showAccountInfo(method) {
+    var a = accountData[method];
+    if (!a) return;
+    $('accInfo').innerHTML = '<div class="glass" style="padding:18px;"><p>📱 <strong>' + method.toUpperCase() + '</strong></p><p>🔢 Number: <strong>' + a.number + '</strong> <button class="btn-sm" onclick="copyText(\'' + a.number + '\')">📋 Copy</button></p><p>📛 Title: <strong>' + a.title + '</strong></p></div>';
 }
 
-function submitDeposit() {
-    if (!selPlan || !selPayment) return toast('Select plan & method', 'e');
-    var tx = $('depTx').value.trim(), fi = $('depSS').files[0];
-    if (!tx || !fi) return toast('TxID + Screenshot required', 'e');
+function copyText(t) { navigator.clipboard.writeText(t); showToast('Copied! 📋', 'success'); }
+function copyReferralLink() { navigator.clipboard.writeText($('refLink').textContent); showToast('Link copied! 📋', 'success'); }
+
+function submitDepositNow() {
+    if (!selectedPlan || !selectedPaymentMethod) return showToast('Please select plan and payment method', 'error');
+    var tx = $('depTx').value.trim();
+    var file = $('depSS').files[0];
+    if (!tx || !file) return showToast('Transaction ID and Screenshot required', 'error');
+
     var fd = new FormData();
-    fd.append('planId', selPlan.id); fd.append('accountType', selPayment); fd.append('txId', tx); fd.append('screenshot', fi);
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/deposit', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
-        try { var d = JSON.parse(x.responseText); if (d.success) { toast('Deposit submitted! ✅', 's'); goDash(); } else toast(d.error, 'e'); } catch(e) { toast('Error', 'e'); }
+    fd.append('planId', selectedPlan.id);
+    fd.append('accountType', selectedPaymentMethod);
+    fd.append('txId', tx);
+    fd.append('screenshot', file);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/deposit', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) { showToast('Deposit submitted! Awaiting approval. ✅', 'success'); goToDashboard(); }
+            else showToast(d.error || 'Failed', 'error');
+        } catch(e) { showToast('Error', 'error'); }
     };
-    x.send(fd);
+    xhr.send(fd);
 }
 
 // Withdraw
-function goWithdraw() { hideAll(); $('withSection').classList.remove('hidden'); loadDash(); }
+function openWithdraw() { hideAllPages(); $('withdrawSection').classList.remove('hidden'); loadDashboardData(); }
 
-function submitWithdraw() {
+function submitWithdrawNow() {
     var t = $('wdType').value, n = $('wdNum').value.trim(), ti = $('wdTitle').value.trim(), a = parseFloat($('wdAmt').value);
-    if (!t || !n || !ti || !a) return toast('All fields required', 'e');
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/withdraw', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
-        try { var d = JSON.parse(x.responseText); if (d.success) { toast('Withdrawal submitted! Amount deducted. ✅', 's'); goDash(); } else toast(d.error, 'e'); } catch(e) { toast('Error', 'e'); }
+    if (!t || !n || !ti || !a) return showToast('All fields required', 'error');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/withdraw', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) { showToast('Withdrawal submitted! ✅', 'success'); goToDashboard(); }
+            else showToast(d.error || 'Failed', 'error');
+        } catch(e) { showToast('Error', 'error'); }
     };
-    x.send(JSON.stringify({ accountType: t, accountNumber: n, accountTitle: ti, amount: a }));
+    xhr.send(JSON.stringify({ accountType: t, accountNumber: n, accountTitle: ti, amount: a }));
 }
 
 // Fund Transfer
-function goTransfer() { hideAll(); $('transferSection').classList.remove('hidden'); loadDash(); $('tfConfirm').classList.add('hidden'); }
+function openTransfer() { hideAllPages(); $('transferSection').classList.remove('hidden'); $('tfConfirm').classList.add('hidden'); loadDashboardData(); }
 
-function verifyPID() {
+function verifyReceiverPID() {
     var pid = $('tfPID').value.trim(), amt = parseFloat($('tfAmt').value);
-    if (!pid || !amt) return toast('PID and Amount required', 'e');
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/verify-pid', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+    if (!pid || !amt) return showToast('PID and Amount required', 'error');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/verify-pid', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             if (d.success) {
                 $('tfConfirm').classList.remove('hidden');
-                $('tfConfirm').innerHTML = '<div class="glass" style="padding:20px;margin-top:15px;"><h3>✅ Receiver Found</h3><p>👤 <strong>' + d.user.username + '</strong></p><p>📱 ' + d.user.whatsapp + '</p><p>🆔 PID: ' + d.user.pid + '</p><p style="color:#fbbf24;font-size:20px;font-weight:900;">Amount: PKR ' + fmt(amt) + '</p><button class="btn" onclick="confirmTransfer(\'' + pid + '\',' + amt + ')">✅ Confirm Transfer</button></div>';
-            } else toast(d.error, 'e');
-        } catch(e) { toast('Error', 'e'); }
+                $('tfConfirm').innerHTML = '<div class="glass" style="padding:20px;margin-top:15px;"><h3>✅ Receiver Found</h3><p>👤 <strong>' + d.user.username + '</strong></p><p>📱 ' + d.user.whatsapp + '</p><p>🆔 PID: ' + d.user.pid + '</p><p style="color:#fbbf24;font-size:20px;font-weight:900;">Amount: PKR ' + fmt(amt) + '</p><button class="btn" onclick="confirmTransferNow(\'' + pid + '\',' + amt + ')">✅ Confirm Transfer</button></div>';
+            } else showToast(d.error, 'error');
+        } catch(e) { showToast('Error', 'error'); }
     };
-    x.send(JSON.stringify({ pid: pid }));
+    xhr.send(JSON.stringify({ pid: pid }));
 }
 
-function confirmTransfer(pid, amt) {
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/fund-transfer', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+function confirmTransferNow(pid, amt) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/fund-transfer', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
-            if (d.success) { toast('✅ Transfer successful!', 's'); goDash(); }
-            else toast(d.error, 'e');
-        } catch(e) { toast('Error', 'e'); }
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) { showToast('✅ Transfer successful!', 'success'); goToDashboard(); }
+            else showToast(d.error, 'error');
+        } catch(e) { showToast('Error', 'error'); }
     };
-    x.send(JSON.stringify({ receiverPid: pid, amount: amt }));
+    xhr.send(JSON.stringify({ receiverPid: pid, amount: amt }));
 }
 
-// View Plan
-function viewPlan() {
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/dashboard', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+// My Plan
+function checkMyPlan() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/dashboard', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             if (d.success && d.activePlan && d.activePlan.planId) {
                 var p = d.activePlan;
-                toast('📋 ' + p.name + '\n💰 Daily: PKR ' + p.dailyProfit.toFixed(2) + '\n📅 Day: ' + p.profitDays + '/60\n💵 Remaining: ' + (60 - p.profitDays) + ' days', 'i');
-            } else toast('No active plan. Invest first!', 'e');
+                showToast('📋 ' + p.name + '\n💰 Daily: PKR ' + p.dailyProfit.toFixed(2) + '\n📅 Day: ' + p.profitDays + '/60', 'info');
+            } else showToast('No active plan. Invest first!', 'error');
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
 // History
-function goHistory(type) { hideAll(); $('histSection').classList.remove('hidden'); loadHistory(type); }
+function openHistory(type) { hideAllPages(); $('historySection').classList.remove('hidden'); loadHistoryData(type); }
 
-function loadHistory(type) {
+function loadHistoryData(type) {
     var title = type === 'deposits' ? '📥 Deposit History' : type === 'withdrawals' ? '📤 Withdrawal History' : '📊 Transaction History';
     var url = type === 'deposits' ? '/api/deposits' : type === 'withdrawals' ? '/api/withdrawals' : '/api/transactions';
-    $('histTitle').textContent = title;
-    var x = new XMLHttpRequest();
-    x.open('GET', API + url, true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+    $('historyTitle').textContent = title;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + url, true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             var items = d.deposits || d.withdrawals || d.transactions || [];
-            $('histContent').innerHTML = renderHistory(items);
-        } catch(e) { $('histContent').innerHTML = '<p>Error loading data</p>'; }
+            $('historyContent').innerHTML = renderHistoryCards(items);
+        } catch(e) { $('historyContent').innerHTML = '<p>Error</p>'; }
     };
-    x.send();
+    xhr.send();
 }
 
-function renderHistory(items) {
-    if (!items || !items.length) return '<p style="text-align:center;color:rgba(255,255,255,0.5);padding:40px;">No records found</p>';
+function renderHistoryCards(items) {
+    if (!items || !items.length) return '<p style="text-align:center;padding:40px;color:rgba(255,255,255,0.5);">No records found</p>';
     var h = '';
-    items.forEach(function(it) {
+    for (var i = 0; i < items.length; i++) {
+        var it = items[i];
         var sc = 'status-' + (it.status === 'completed' ? 'completed' : it.status);
         var si = it.status === 'approved' || it.status === 'completed' ? '✅' : it.status === 'rejected' ? '❌' : '⏳';
         var rd = new Date(it.createdAt);
         var pd = it.processedAt ? new Date(it.processedAt) : null;
-        var rt = rd.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' + rd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        var pt = pd ? pd.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' + pd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '---';
-        var tl = it.type === 'deposit' ? '📥 DEPOSIT' : it.type === 'withdraw' ? '📤 WITHDRAWAL' : it.type === 'profit' ? '💎 PROFIT' : it.type === 'referral' ? '🎁 REFERRAL' : it.type === 'transfer_sent' ? '🔄 TRANSFER SENT' : it.type === 'transfer_received' ? '🔄 TRANSFER RECEIVED' : it.type === 'refund' ? '↩️ REFUND' : it.type.toUpperCase();
-        h += '<div class="hist-card"><div class="hist-header"><span class="hist-type">' + tl + '</span><span class="hist-status ' + sc + '">' + si + ' ' + it.status.toUpperCase() + '</span></div><div class="hist-body">';
-        h += '<div class="hist-item"><span class="hist-label">Amount</span><span class="hist-value amount">PKR ' + fmt(it.amount) + '</span></div>';
+        var rt = rd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + rd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        var pt = pd ? pd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + pd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '---';
+        var tl = it.type === 'deposit' ? '📥 DEPOSIT' : it.type === 'withdraw' ? '📤 WITHDRAWAL' : it.type === 'profit' ? '💎 PROFIT' : it.type === 'referral' ? '🎁 REFERRAL' : it.type === 'transfer_sent' ? '🔄 SENT' : it.type === 'transfer_received' ? '🔄 RECEIVED' : it.type === 'refund' ? '↩️ REFUND' : it.type.toUpperCase();
+
+        h += '<div class="hist-card"><div class="hist-header"><span class="hist-type">' + tl + '</span><span class="hist-status ' + sc + '">' + si + ' ' + it.status.toUpperCase() + '</span></div><div class="hist-body"><div class="hist-item"><span class="hist-label">Amount</span><span class="hist-value amount">PKR ' + fmt(it.amount) + '</span></div>';
         if (it.fee > 0) h += '<div class="hist-item"><span class="hist-label">Fee</span><span class="hist-value" style="color:#f87171;">PKR ' + fmt(it.fee) + '</span></div>';
         if (it.accountType) h += '<div class="hist-item"><span class="hist-label">Method</span><span class="hist-value">' + it.accountType.toUpperCase() + '</span></div>';
-        if (it.txId) h += '<div class="hist-item"><span class="hist-label">Transaction ID</span><span class="hist-value" style="font-size:11px;word-break:break-all;">' + it.txId + '</span></div>';
+        if (it.txId) h += '<div class="hist-item"><span class="hist-label">TxID</span><span class="hist-value" style="font-size:11px;">' + it.txId + '</span></div>';
         if (it.planName) h += '<div class="hist-item"><span class="hist-label">Plan</span><span class="hist-value">' + it.planName + '</span></div>';
-        if (it.relatedUsername) h += '<div class="hist-item"><span class="hist-label">' + (it.type === 'transfer_sent' ? 'Receiver' : 'Sender') + '</span><span class="hist-value">' + it.relatedUsername + '</span></div>';
-        h += '</div><div class="hist-timeline"><span>📅 Requested:<br><strong>' + rt + '</strong></span><span>' + (it.status === 'pending' ? '⏳' : '✅') + ' Processed:<br><strong>' + pt + '</strong></span></div></div>';
-    });
+        if (it.relatedUsername) h += '<div class="hist-item"><span class="hist-label">' + (it.type === 'transfer_sent' ? 'To' : 'From') + '</span><span class="hist-value">' + it.relatedUsername + '</span></div>';
+        h += '</div><div class="hist-timeline"><span>📅 ' + rt + '</span><span>' + (it.status === 'pending' ? '⏳' : '✅') + ' ' + pt + '</span></div></div>';
+    }
     return h;
 }
 
 // Team
-function goTeam() { hideAll(); $('histSection').classList.remove('hidden'); loadTeam(); }
+function openTeam() { hideAllPages(); $('historySection').classList.remove('hidden'); loadTeamData(); }
 
-function loadTeam() {
-    $('histTitle').textContent = '👥 My Team';
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/team', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+function loadTeamData() {
+    $('historyTitle').textContent = '👥 My Team';
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/team', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
-            var h = '<p style="margin-bottom:20px;font-size:18px;">👥 Total Members: <strong>' + (d.teamCount || 0) + '</strong></p>';
-            if (d.team && d.team.length) {
-                d.team.forEach(function(m) {
-                    h += '<div class="hist-card"><div class="hist-header"><span class="hist-type">👤 ' + m.username + '</span><span style="color:rgba(255,255,255,0.5);font-size:12px;">PID: ' + (m.pid || '---') + '</span></div><div class="hist-body"><div class="hist-item"><span class="hist-label">Invested</span><span class="hist-value amount">PKR ' + fmt(m.totalInvested) + '</span></div><div class="hist-item"><span class="hist-label">Joined</span><span class="hist-value">' + new Date(m.createdAt).toLocaleDateString() + '</span></div></div></div>';
-                });
+            var d = JSON.parse(xhr.responseText);
+            var h = '<p style="margin-bottom:20px;">Total: <strong>' + (d.teamCount || 0) + '</strong> members</p>';
+            if (d.team) for (var i = 0; i < d.team.length; i++) {
+                var m = d.team[i];
+                h += '<div class="hist-card"><div class="hist-header"><span>👤 ' + m.username + '</span></div><div class="hist-body"><div class="hist-item"><span class="hist-label">Invested</span><span class="hist-value amount">PKR ' + fmt(m.totalInvested) + '</span></div><div class="hist-item"><span class="hist-label">Joined</span><span class="hist-value">' + new Date(m.createdAt).toLocaleDateString() + '</span></div></div></div>';
             }
-            $('histContent').innerHTML = h;
+            $('historyContent').innerHTML = h;
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
 // Profile
-function goProfile() {
-    hideAll(); $('profileSection').classList.remove('hidden');
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/profile', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
-        try {
-            var d = JSON.parse(x.responseText);
-            if (d.success) {
-                $('pfPID').textContent = d.user.pid;
-                $('pfWA').value = d.user.whatsapp || '';
-                if (d.user.profilePic) { $('profileDP').src = d.user.profilePic; $('profileDP').style.display = 'block'; }
-            }
-        } catch(e) { }
+function openProfile() {
+    hideAllPages(); $('profileSection').classList.remove('hidden');
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/profile', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
+        try { var d = JSON.parse(xhr.responseText); if (d.success) { $('pfPID').textContent = d.user.pid; $('pfWA').value = d.user.whatsapp || ''; } } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
-function updateProfile() {
+function saveProfile() {
     var fd = new FormData();
     var wa = $('pfWA').value.trim();
     var pass = $('pfPass').value.trim();
-    var dp = $('pfDP').files[0];
     if (wa) fd.append('whatsapp', wa);
     if (pass) fd.append('password', pass);
-    if (dp) fd.append('profilePic', dp);
-    if (!wa && !pass && !dp) return toast('No changes', 'e');
-    var x = new XMLHttpRequest();
-    x.open('PUT', API + '/api/profile', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+    if (!wa && !pass) return showToast('No changes', 'error');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', API_URL + '/api/profile', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
-            if (d.success) { toast('Profile updated! ✅', 's'); goDash(); }
-            else toast(d.error, 'e');
-        } catch(e) { toast('Error', 'e'); }
+            var d = JSON.parse(xhr.responseText);
+            if (d.success) { showToast('Profile updated! ✅', 'success'); goToDashboard(); }
+            else showToast(d.error, 'error');
+        } catch(e) { showToast('Error', 'error'); }
     };
-    x.send(fd);
+    xhr.send(fd);
 }
 
 // Leaderboard
-function goLeaderboard() { hideAll(); $('leadSection').classList.remove('hidden'); loadLeaderboard(); }
+function openLeaderboard() { hideAllPages(); $('leaderboardSection').classList.remove('hidden'); loadLeaderboardData(); }
 
-function loadLeaderboard() {
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/leaderboard', true);
-    x.setRequestHeader('Authorization', token);
-    x.onload = function() {
+function loadLeaderboardData() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/leaderboard', true);
+    xhr.setRequestHeader('Authorization', authToken);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             var h1 = '', h2 = '';
-            if (d.topInvestors) d.topInvestors.forEach(function(u, i) { h1 += '<p>' + (i + 1) + '. 🏅 ' + u.username + ' - PKR ' + fmt(u.totalInvested) + '</p>'; });
-            if (d.topReferrers) d.topReferrers.forEach(function(u, i) { h2 += '<p>' + (i + 1) + '. 🔗 ' + u.username + ' - ' + (u.c || 0) + ' refs</p>'; });
+            if (d.topInvestors) for (var i = 0; i < d.topInvestors.length; i++) { h1 += '<p>' + (i + 1) + '. 🏅 ' + d.topInvestors[i].username + ' - PKR ' + fmt(d.topInvestors[i].totalInvested) + '</p>'; }
+            if (d.topReferrers) for (var j = 0; j < d.topReferrers.length; j++) { h2 += '<p>' + (j + 1) + '. 🔗 ' + d.topReferrers[j].username + ' - ' + (d.topReferrers[j].c || 0) + ' refs</p>'; }
             $('topInv').innerHTML = h1 || '<p>No data</p>';
             $('topRef').innerHTML = h2 || '<p>No data</p>';
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
 // FAQ
-function goFAQ() { hideAll(); $('faqSection').classList.remove('hidden'); loadFAQ(); }
+function openFAQ() { hideAllPages(); $('faqSection').classList.remove('hidden'); loadFAQData(); }
 
-function loadFAQ() {
-    var x = new XMLHttpRequest();
-    x.open('GET', API + '/api/faqs', true);
-    x.onload = function() {
+function loadFAQData() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/api/faqs', true);
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             if (d.faqs && d.faqs.length) {
                 var h = '';
-                d.faqs.forEach(function(f, i) {
-                    h += '<div class="glass form-card" style="margin:14px 0;animation:fadeIn 0.4s ease;animation-delay:' + (i * 0.08) + 's;"><h3 style="color:#a78bfa;margin-bottom:10px;">❓ ' + f.question + '</h3><p style="color:rgba(255,255,255,0.7);line-height:1.6;">' + f.answer + '</p></div>';
-                });
+                for (var i = 0; i < d.faqs.length; i++) {
+                    h += '<div class="glass form-card" style="margin:14px 0;"><h3 style="color:#a78bfa;">❓ ' + d.faqs[i].question + '</h3><p style="color:rgba(255,255,255,0.7);">' + d.faqs[i].answer + '</p></div>';
+                }
                 $('faqContent').innerHTML = h;
-            } else $('faqContent').innerHTML = '<p style="text-align:center;padding:30px;color:rgba(255,255,255,0.5);">No FAQs available</p>';
+            } else $('faqContent').innerHTML = '<p style="text-align:center;padding:30px;">No FAQs</p>';
         } catch(e) { }
     };
-    x.send();
+    xhr.send();
 }
 
 // Support
 function openSupport() { $('supportModal').classList.remove('hidden'); }
-function closeSupport() { $('supportModal').classList.add('hidden'); }
+function closeSupportModal() { $('supportModal').classList.add('hidden'); }
 
 // Chat
-function openChat() { closeSupport(); $('chatWidget').classList.remove('hidden'); }
-function closeChat() { $('chatWidget').classList.add('hidden'); }
+function openChatWidget() { closeSupportModal(); $('chatWidget').classList.remove('hidden'); }
+function closeChatWidget() { $('chatWidget').classList.add('hidden'); }
 
-function sendChat() {
+function sendChatMessage() {
     var input = $('chatInput');
     var msg = input.value.trim();
     if (!msg) return;
-    // Add user message
     var body = $('chatBody');
     body.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
     input.value = '';
     body.scrollTop = body.scrollHeight;
-    // Call API
-    var x = new XMLHttpRequest();
-    x.open('POST', API + '/api/chat', true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.onload = function() {
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/api/chat', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
         try {
-            var d = JSON.parse(x.responseText);
+            var d = JSON.parse(xhr.responseText);
             body.innerHTML += '<div class="chat-msg bot">' + d.reply + '</div>';
             body.scrollTop = body.scrollHeight;
         } catch(e) { }
     };
-    x.send(JSON.stringify({ message: msg }));
+    xhr.send(JSON.stringify({ message: msg }));
 }
 
-// Copy Referral
-function copyRef() { navigator.clipboard.writeText($('refLink').textContent); toast('Link copied! 📋', 's'); }
-
-// Init
-if (token) { hideAll(); $('dashSection').classList.remove('hidden'); loadDash(); }
-else { hideAll(); $('authSection').classList.remove('hidden'); showLogin(); }
+// INIT - Check if logged in
+(function() {
+    hideAllPages();
+    if (authToken) {
+        $('dashSection').classList.remove('hidden');
+        loadDashboardData();
+    } else {
+        $('authSection').classList.remove('hidden');
+        showLoginForm();
+    }
+})();
