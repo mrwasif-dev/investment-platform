@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profit 24 - Investment Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -14,28 +16,33 @@
     <div class="auth-card" id="loginCard">
         <div class="logo">💎 Profit 24</div>
         <div class="subtitle">Secure Investment Platform</div>
-        <input type="text" class="inp" id="loginUser" placeholder="Username" autocomplete="off">
-        <input type="password" class="inp" id="loginPass" placeholder="Password" autocomplete="off">
-        <button class="btn" onclick="handleLogin()">🚀 Sign In</button>
-        <p class="link" onclick="showSignupForm()">Create New Account →</p>
+        <input type="text" class="inp" id="loginUser" placeholder="Username">
+        <input type="password" class="inp" id="loginPass" placeholder="Password">
+        <button class="btn" onclick="doLogin()">🚀 Sign In</button>
+        <p class="link" onclick="showSignup()">Create New Account →</p>
     </div>
     <div class="auth-card hidden" id="signupCard">
         <div class="logo">✨ Join Now</div>
         <div class="subtitle">Start Earning Daily Profits</div>
-        <input type="text" class="inp" id="signupUser" placeholder="Username" autocomplete="off">
-        <input type="text" class="inp" id="signupWA" placeholder="WhatsApp Number" autocomplete="off">
-        <input type="password" class="inp" id="signupPass" placeholder="Password (6+ characters)" autocomplete="off">
-        <input type="text" class="inp" id="signupRef" placeholder="Referral Code (Optional)" autocomplete="off">
-        <button class="btn" onclick="handleSignup()">✨ Create Account</button>
-        <p class="link" onclick="showLoginForm()">← Back to Login</p>
+        <input type="text" class="inp" id="signupUser" placeholder="Username">
+        <input type="text" class="inp" id="signupWA" placeholder="WhatsApp Number">
+        <input type="password" class="inp" id="signupPass" placeholder="Password (6+ characters)">
+        <input type="text" class="inp" id="signupRef" placeholder="Referral Code (Optional)">
+        <button class="btn" onclick="doSignup()">✨ Create Account</button>
+        <p class="link" onclick="showLogin()">← Back to Login</p>
     </div>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashSection" class="container hidden">
     <div class="glass header-card">
-        <h2 id="dashUser">👋 Welcome</h2>
-        <p style="color:rgba(255,255,255,0.5);font-size:13px;">PID: <span id="dashPID">---</span></p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:15px;">
+            <img id="dashDP" src="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #a78bfa;display:none;" alt="DP">
+            <div>
+                <h2 id="dashUser">👋 Welcome</h2>
+                <p style="color:rgba(255,255,255,0.5);font-size:13px;">PID: <span id="dashPID">---</span></p>
+            </div>
+        </div>
         <div class="balance">PKR <span id="dashBal">0.00</span></div>
         <div class="stats-grid">
             <div class="stat-box"><div class="stat-value" id="sToday">0</div><div class="stat-label">Today's Profit</div></div>
@@ -50,65 +57,65 @@
     </div>
 
     <div class="menu-grid">
-        <div class="menu-card" onclick="openDeposit()"><span class="menu-icon">💰</span>Deposit</div>
-        <div class="menu-card" onclick="openWithdraw()"><span class="menu-icon">💸</span>Withdraw</div>
-        <div class="menu-card" onclick="checkMyPlan()"><span class="menu-icon">📋</span>My Plan</div>
-        <div class="menu-card" onclick="openHistory('deposits')"><span class="menu-icon">📥</span>Deposit History</div>
-        <div class="menu-card" onclick="openHistory('withdrawals')"><span class="menu-icon">📤</span>Withdraw History</div>
-        <div class="menu-card" onclick="openHistory('all')"><span class="menu-icon">📊</span>Transactions</div>
-        <div class="menu-card" onclick="openTeam()"><span class="menu-icon">👥</span>My Team</div>
-        <div class="menu-card" onclick="openTransfer()"><span class="menu-icon">🔄</span>Fund Transfer</div>
-        <div class="menu-card" onclick="openProfile()"><span class="menu-icon">👤</span>Profile</div>
+        <div class="menu-card" onclick="goDeposit()"><span class="menu-icon">💰</span>Deposit</div>
+        <div class="menu-card" onclick="goWithdraw()"><span class="menu-icon">💸</span>Withdraw</div>
+        <div class="menu-card" onclick="viewPlan()"><span class="menu-icon">📋</span>My Plan</div>
+        <div class="menu-card" onclick="goHistory('deposits')"><span class="menu-icon">📥</span>Deposit History</div>
+        <div class="menu-card" onclick="goHistory('withdrawals')"><span class="menu-icon">📤</span>Withdraw History</div>
+        <div class="menu-card" onclick="goHistory('all')"><span class="menu-icon">📊</span>Transactions</div>
+        <div class="menu-card" onclick="goTeam()"><span class="menu-icon">👥</span>My Team</div>
+        <div class="menu-card" onclick="goTransfer()"><span class="menu-icon">🔄</span>Fund Transfer</div>
+        <div class="menu-card" onclick="goProfile()"><span class="menu-icon">👤</span>Profile</div>
     </div>
 
     <div class="glass ref-box">
         <p>🔗 Your Referral Link:</p>
         <code id="refLink">Loading...</code>
-        <button class="btn-sm" onclick="copyReferralLink()">📋 Copy Link</button>
+        <button class="btn-sm" onclick="copyRef()">📋 Copy Link</button>
     </div>
 
     <div class="bottom-nav">
-        <button class="btn-o" onclick="openLeaderboard()">🏆 Leaderboard</button>
-        <button class="btn-o" onclick="openFAQ()">❓ FAQ</button>
+        <button class="btn-o" onclick="goLeaderboard()">🏆 Leaderboard</button>
+        <button class="btn-o" onclick="goFAQ()">❓ FAQ</button>
         <button class="btn-o" onclick="openSupport()">💬 Support</button>
-        <button class="btn-o btn-r" onclick="handleLogout()">🚪 Logout</button>
+        <button class="btn-o btn-r" onclick="doLogout()">🚪 Logout</button>
     </div>
 </div>
 
 <!-- PLANS PAGE -->
 <div id="plansSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <h2 class="page-title">📋 Select Investment Plan</h2>
     <div class="plans-grid" id="plansGrid"></div>
 </div>
 
 <!-- PAYMENT METHOD PAGE -->
 <div id="paymentSection" class="container hidden">
-    <button class="back-btn" onclick="goToPlans()">← Back</button>
+    <button class="back-btn" onclick="goPlans()">← Back</button>
     <h2 class="page-title">🏦 Select Payment Method</h2>
     <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px;">Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong></p>
     <div class="pay-grid">
-        <div class="pay-card" onclick="selectPaymentMethod('easypaisa')"><div class="pay-icon">📱</div><div class="pay-name">Easypaisa</div><div class="pay-info">Send payment via Easypaisa</div></div>
-        <div class="pay-card" onclick="selectPaymentMethod('jazzcash')"><div class="pay-icon">💼</div><div class="pay-name">JazzCash</div><div class="pay-info">Send payment via JazzCash</div></div>
+        <div class="pay-card" onclick="selectPayment('easypaisa')"><div class="pay-icon">📱</div><div class="pay-name">Easypaisa</div><div class="pay-info">Send payment via Easypaisa</div></div>
+        <div class="pay-card" onclick="selectPayment('jazzcash')"><div class="pay-icon">💼</div><div class="pay-name">JazzCash</div><div class="pay-info">Send payment via JazzCash</div></div>
     </div>
 </div>
 
 <!-- DEPOSIT FORM -->
 <div id="depositSection" class="container hidden">
-    <button class="back-btn" onclick="goToPayment()">← Back</button>
+    <button class="back-btn" onclick="goPayment()">← Back</button>
     <div class="glass form-card">
         <h2>💳 Complete Deposit</h2>
         <p style="margin:10px 0;">Method: <strong id="depMethod"></strong></p>
         <div id="accInfo" style="margin:15px 0;"></div>
         <input type="file" class="inp" id="depSS" accept="image/*">
         <input type="text" class="inp" id="depTx" placeholder="Transaction ID">
-        <button class="btn" onclick="submitDepositNow()">📤 Submit Deposit</button>
+        <button class="btn" onclick="submitDeposit()">📤 Submit Deposit</button>
     </div>
 </div>
 
 <!-- WITHDRAW PAGE -->
-<div id="withdrawSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+<div id="withSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <div class="glass form-card">
         <h2>💸 Withdraw Funds</h2>
         <div class="balance-display" style="margin:15px 0;text-align:center;">
@@ -119,13 +126,13 @@
         <input type="text" class="inp" id="wdNum" placeholder="Account Number">
         <input type="text" class="inp" id="wdTitle" placeholder="Account Title">
         <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min: 30)">
-        <button class="btn" onclick="submitWithdrawNow()">📤 Send Request</button>
+        <button class="btn" onclick="submitWithdraw()">📤 Send Request</button>
     </div>
 </div>
 
-<!-- FUND TRANSFER -->
+<!-- FUND TRANSFER PAGE -->
 <div id="transferSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <div class="glass form-card">
         <h2>🔄 Fund Transfer</h2>
         <div class="balance-display" style="margin:15px 0;text-align:center;">
@@ -134,33 +141,35 @@
         </div>
         <input type="text" class="inp" id="tfPID" placeholder="Receiver's PID">
         <input type="number" class="inp" id="tfAmt" placeholder="Amount">
-        <button class="btn" onclick="verifyReceiverPID()">Next →</button>
+        <button class="btn" onclick="verifyPID()">Next →</button>
         <div id="tfConfirm" class="hidden" style="margin-top:20px;"></div>
     </div>
 </div>
 
 <!-- HISTORY PAGE -->
-<div id="historySection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
-    <h2 class="page-title" id="historyTitle"></h2>
-    <div id="historyContent"></div>
+<div id="histSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <h2 class="page-title" id="histTitle"></h2>
+    <div id="histContent"></div>
 </div>
 
-<!-- PROFILE -->
+<!-- PROFILE PAGE -->
 <div id="profileSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <div class="glass form-card" style="text-align:center;">
         <h2>👤 Profile</h2>
-        <p style="color:rgba(255,255,255,0.6);margin:10px 0;">PID: <strong style="color:#a78bfa;" id="pfPID">---</strong></p>
+        <img id="profileDP" src="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #a78bfa;margin:15px auto;display:block;" alt="DP">
+        <input type="file" class="inp" id="pfDP" accept="image/*">
+        <p style="color:rgba(255,255,255,0.6);">PID: <strong style="color:#a78bfa;" id="pfPID">---</strong></p>
         <input type="text" class="inp" id="pfWA" placeholder="WhatsApp Number">
-        <input type="password" class="inp" id="pfPass" placeholder="New Password (leave blank to keep)">
-        <button class="btn" onclick="saveProfile()">💾 Save Changes</button>
+        <input type="password" class="inp" id="pfPass" placeholder="New Password (leave blank)">
+        <button class="btn" onclick="updateProfile()">💾 Save Changes</button>
     </div>
 </div>
 
 <!-- LEADERBOARD -->
-<div id="leaderboardSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+<div id="leadSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <h2 class="page-title">🏆 Leaderboard</h2>
     <div class="glass form-card"><h3>👑 Top Investors</h3><div id="topInv"></div></div>
     <div class="glass form-card" style="margin-top:15px;"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div>
@@ -168,7 +177,7 @@
 
 <!-- FAQ -->
 <div id="faqSection" class="container hidden">
-    <button class="back-btn" onclick="goToDashboard()">← Back</button>
+    <button class="back-btn" onclick="goDash()">← Back</button>
     <h2 class="page-title">❓ Frequently Asked Questions</h2>
     <div id="faqContent"></div>
 </div>
@@ -176,17 +185,23 @@
 <!-- SUPPORT MODAL -->
 <div id="supportModal" class="modal hidden">
     <div class="modal-content glass">
-        <span class="modal-close" onclick="closeSupportModal()">✕</span>
+        <span class="modal-close" onclick="closeSupport()">✕</span>
         <h2 style="text-align:center;margin-bottom:25px;">💬 Support</h2>
         <div class="support-options">
             <a href="https://wa.me/258867532400" target="_blank" class="support-card">
-                <div class="support-icon">📞</div><div class="support-name">Contact Admin</div><div class="support-info">Chat on WhatsApp</div>
+                <div class="support-icon">📞</div>
+                <div class="support-name">Contact Admin</div>
+                <div class="support-info">Chat with Admin on WhatsApp</div>
             </a>
             <a href="https://whatsapp.com/channel/0029VbCIujEHAdNb1hxO4t2E" target="_blank" class="support-card">
-                <div class="support-icon">📢</div><div class="support-name">Support Channel</div><div class="support-info">Join WhatsApp Channel</div>
+                <div class="support-icon">📢</div>
+                <div class="support-name">Support Channel</div>
+                <div class="support-info">Join our WhatsApp Channel</div>
             </a>
-            <div class="support-card" onclick="openChatWidget()">
-                <div class="support-icon">💬</div><div class="support-name">Live Chat</div><div class="support-info">AI Assistant</div>
+            <div class="support-card" onclick="openChat()">
+                <div class="support-icon">💬</div>
+                <div class="support-name">Live Chat</div>
+                <div class="support-info">Chat with AI Assistant</div>
             </div>
         </div>
     </div>
@@ -194,15 +209,23 @@
 
 <!-- CHAT WIDGET -->
 <div id="chatWidget" class="chat-widget hidden">
-    <div class="chat-header"><span>💬 Profit 24 Assistant</span><span onclick="closeChatWidget()" style="cursor:pointer;">✕</span></div>
-    <div class="chat-body" id="chatBody"><div class="chat-msg bot">Hello! 👋 Ask me anything about Profit 24!</div></div>
+    <div class="chat-header">
+        <span>💬 Profit 24 Assistant</span>
+        <span onclick="closeChat()" style="cursor:pointer;">✕</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-msg bot">Hello! 👋 I'm the Profit 24 assistant. Ask me anything about the platform!</div>
+    </div>
     <div class="chat-footer">
-        <input type="text" id="chatInput" class="chat-input" placeholder="Type your question..." onkeypress="if(event.key==='Enter')sendChatMessage()">
-        <button class="btn-sm" onclick="sendChatMessage()">Send</button>
+        <input type="text" id="chatInput" class="chat-input" placeholder="Type your question..." onkeypress="if(event.key==='Enter')sendChat()">
+        <button class="btn-sm" onclick="sendChat()" style="flex-shrink:0;">Send</button>
     </div>
 </div>
 
+<!-- WHATSAPP FLOAT -->
 <a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
+
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script src="js/app.js"></script>
