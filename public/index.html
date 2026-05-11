@@ -1,287 +1,176 @@
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profit 24 - Investment Platform</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit 24 - Investment Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div id="app">
-  <!-- Auth Section -->
-  <div id="auth-page">
-    <div class="auth-card" id="login-card">
-      <div class="logo">💎 Profit 24</div>
-      <p class="subtitle">Secure Investment Platform</p>
-      <div class="input-wrap"><input type="text" id="login-user" placeholder="Username"></div>
-      <div class="input-wrap"><input type="password" id="login-pass" placeholder="Password"></div>
-      <button class="btn-grad" onclick="doLogin()">🚀 Sign In</button>
-      <p class="link" onclick="showSignup()">Create New Account →</p>
+    <!-- ============ AUTH SECTION ============ -->
+    <div id="authSection">
+        <!-- Login -->
+        <div class="auth-card" id="loginCard">
+            <div class="logo">💎 Profit 24</div>
+            <p class="subtitle">Secure Investment Platform</p>
+            <input type="text" id="loginUsername" class="input-field" placeholder="Username">
+            <input type="password" id="loginPassword" class="input-field" placeholder="Password">
+            <button class="btn-primary" onclick="handleLogin()">🚀 Sign In</button>
+            <p class="link-text" onclick="showSignupForm()">Create New Account →</p>
+        </div>
+
+        <!-- Signup -->
+        <div class="auth-card hidden" id="signupCard">
+            <div class="logo">✨ Join Now</div>
+            <p class="subtitle">Start Earning Daily Profits</p>
+            <input type="text" id="signupUsername" class="input-field" placeholder="Username">
+            <input type="text" id="signupWhatsapp" class="input-field" placeholder="WhatsApp Number">
+            <input type="password" id="signupPassword" class="input-field" placeholder="Password">
+            <input type="text" id="signupReferral" class="input-field" placeholder="Referral Code (Optional)">
+            <button class="btn-primary" onclick="handleSignup()">✨ Create Account</button>
+            <p class="link-text" onclick="showLoginForm()">← Back to Login</p>
+        </div>
     </div>
 
-    <div class="auth-card hidden" id="signup-card">
-      <div class="logo">✨ Join Now</div>
-      <p class="subtitle">Start Earning Daily</p>
-      <div class="input-wrap"><input type="text" id="signup-user" placeholder="Username"></div>
-      <div class="input-wrap"><input type="text" id="signup-wa" placeholder="WhatsApp Number"></div>
-      <div class="input-wrap"><input type="password" id="signup-pass" placeholder="Password"></div>
-      <div class="input-wrap"><input type="text" id="signup-ref" placeholder="Referral Code (Optional)"></div>
-      <button class="btn-grad" onclick="doSignup()">✨ Sign Up</button>
-      <p class="link" onclick="showLogin()">← Back to Login</p>
+    <!-- ============ DASHBOARD ============ -->
+    <div id="dashboardSection" class="container hidden">
+        <div class="header-card">
+            <h2 id="dashUsername">👋 Welcome</h2>
+            <div class="balance-display">PKR <span id="dashBalance">0.00</span></div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-value" id="statToday">0</div>
+                    <div class="stat-label">Today's Profit</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statInvested">0</div>
+                    <div class="stat-label">Total Invested</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statEarned">0</div>
+                    <div class="stat-label">Total Earned</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statRefs">0</div>
+                    <div class="stat-label">Referrals</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-grid">
+            <div class="menu-card" onclick="navigateTo('plans')">
+                <span class="menu-icon">💰</span>Deposit
+            </div>
+            <div class="menu-card" onclick="navigateTo('withdraw')">
+                <span class="menu-icon">💸</span>Widraw
+            </div>
+            <div class="menu-card" onclick="viewActivePlan()">
+                <span class="menu-icon">📋</span>My Plan
+            </div>
+            <div class="menu-card" onclick="navigateTo('deposits')">
+                <span class="menu-icon">📥</span>Deposit Logs
+            </div>
+            <div class="menu-card" onclick="navigateTo('withdrawals')">
+                <span class="menu-icon">📤</span>Widraw Logs
+            </div>
+            <div class="menu-card" onclick="navigateTo('transactions')">
+                <span class="menu-icon">📊</span>History
+            </div>
+            <div class="menu-card" onclick="navigateTo('team')">
+                <span class="menu-icon">👥</span>My Team
+            </div>
+        </div>
+
+        <div class="referral-card">
+            <p>🔗 Your Referral Link:</p>
+            <code id="referralLink">Loading...</code>
+            <button class="btn-sm" onclick="copyReferral()">📋 Copy Link</button>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="btn-outline" onclick="navigateTo('leaderboard')">🏆 Leaderboard</button>
+            <button class="btn-outline" onclick="navigateTo('faqs')">❓ FAQ</button>
+            <button class="btn-outline btn-danger" onclick="handleLogout()">🚪 Logout</button>
+        </div>
     </div>
-  </div>
 
-  <!-- Dashboard -->
-  <div id="dashboard-page" class="hidden">
-    <div class="header glass">
-      <h2 id="dash-user">Welcome!</h2>
-      <div class="balance">PKR <span id="dash-balance">0</span></div>
-      <div class="stats-row">
-        <div class="stat-box"><div class="s-val" id="s-today">0</div><div class="s-lbl">Today</div></div>
-        <div class="stat-box"><div class="s-val" id="s-invested">0</div><div class="s-lbl">Invested</div></div>
-        <div class="stat-box"><div class="s-val" id="s-earned">0</div><div class="s-lbl">Earned</div></div>
-        <div class="stat-box"><div class="s-val" id="s-refs">0</div><div class="s-lbl">Referrals</div></div>
-      </div>
+    <!-- ============ PLANS SECTION ============ -->
+    <div id="plansSection" class="container hidden">
+        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <h2 class="page-title">📋 Investment Plans</h2>
+        <div class="plans-grid" id="plansGrid"></div>
+
+        <div id="depositForm" class="form-card hidden">
+            <h3>💳 Deposit - <span id="selectedPlanName"></span></h3>
+            <p>Amount: <strong>PKR <span id="selectedPlanAmount"></span></strong></p>
+            <select id="accountType" class="input-field" onchange="showAccountDetails()">
+                <option value="">-- Select Payment Method --</option>
+                <option value="easypaisa">Easypaisa</option>
+                <option value="jazzcash">JazzCash</option>
+            </select>
+            <div id="accountDetails" class="hidden"></div>
+            <input type="file" id="screenshotFile" class="input-field" accept="image/*">
+            <input type="text" id="transactionId" class="input-field" placeholder="Transaction ID">
+            <button class="btn-primary" onclick="submitDeposit()">📤 Submit Deposit</button>
+        </div>
     </div>
 
-    <div class="menu-grid">
-      <div class="menu-card" onclick="showPlansPage()"><div class="m-icon">💰</div>Deposit</div>
-      <div class="menu-card" onclick="showWithdrawPage()"><div class="m-icon">💸</div>Widraw</div>
-      <div class="menu-card" onclick="viewPlan()"><div class="m-icon">📋</div>My Plan</div>
-      <div class="menu-card" onclick="showHistory('deposits')"><div class="m-icon">📥</div>Deposits</div>
-      <div class="menu-card" onclick="showHistory('withdrawals')"><div class="m-icon">📤</div>Widraws</div>
-      <div class="menu-card" onclick="showHistory('all')"><div class="m-icon">📊</div>History</div>
-      <div class="menu-card" onclick="showTeam()"><div class="m-icon">👥</div>My Team</div>
+    <!-- ============ WITHDRAW SECTION ============ -->
+    <div id="withdrawSection" class="container hidden">
+        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <div class="form-card">
+            <h2>💸 Withdraw Funds</h2>
+            <select id="wdAccountType" class="input-field">
+                <option value="">-- Select Method --</option>
+                <option value="easypaisa">Easypaisa</option>
+                <option value="jazzcash">JazzCash</option>
+            </select>
+            <input type="text" id="wdAccountNumber" class="input-field" placeholder="Account Number">
+            <input type="text" id="wdAccountTitle" class="input-field" placeholder="Account Title">
+            <input type="number" id="wdAmount" class="input-field" placeholder="Amount (Min: 30)">
+            <button class="btn-primary" onclick="submitWithdrawal()">📤 Send Request</button>
+        </div>
     </div>
 
-    <div class="ref-box glass">
-      <p>🔗 Your Referral Link:</p>
-      <code id="ref-link">Loading...</code>
-      <button class="btn-sm" onclick="copyRef()">📋 Copy</button>
+    <!-- ============ HISTORY SECTION ============ -->
+    <div id="historySection" class="container hidden">
+        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <h2 class="page-title" id="historyTitle"></h2>
+        <div id="historyContent"></div>
     </div>
 
-    <div class="bottom-nav">
-      <button class="btn-outline" onclick="showLeaderboard()">🏆 Leaderboard</button>
-      <button class="btn-outline" onclick="showFaqs()">❓ FAQ</button>
-      <button class="btn-outline btn-red" onclick="logout()">🚪 Logout</button>
+    <!-- ============ LEADERBOARD ============ -->
+    <div id="leaderboardSection" class="container hidden">
+        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <h2 class="page-title">🏆 Leaderboard</h2>
+        <div class="form-card">
+            <h3>👑 Top Investors</h3>
+            <div id="topInvestors"></div>
+        </div>
+        <div class="form-card" style="margin-top:15px;">
+            <h3>🔗 Top Referrers</h3>
+            <div id="topReferrers"></div>
+        </div>
     </div>
-  </div>
 
-  <!-- Plans Page -->
-  <div id="plans-page" class="hidden page">
-    <button class="back-btn" onclick="goDashboard()">← Back</button>
-    <h2 class="page-title">📋 Investment Plans</h2>
-    <div class="plans-grid" id="plans-grid"></div>
-
-    <div id="deposit-form" class="hidden glass" style="margin-top:20px; padding:20px;">
-      <h3>💳 Deposit - <span id="sel-plan-name"></span></h3>
-      <p>Amount: <strong>PKR <span id="sel-plan-amt"></span></strong></p>
-      <select id="dep-acc-type" onchange="showAcc()" class="input-wrap" style="width:100%;">
-        <option value="">-- Select Method --</option>
-        <option value="easypaisa">Easypaisa</option>
-        <option value="jazzcash">JazzCash</option>
-      </select>
-      <div id="acc-details" class="hidden"></div>
-      <input type="file" id="dep-ss" class="input-wrap" style="width:100%;" accept="image/*">
-      <input type="text" id="dep-txid" class="input-wrap" style="width:100%;" placeholder="Transaction ID">
-      <button class="btn-grad" onclick="submitDeposit()">Submit Deposit</button>
+    <!-- ============ FAQ SECTION ============ -->
+    <div id="faqSection" class="container hidden">
+        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <h2 class="page-title">❓ FAQ</h2>
+        <div id="faqList"></div>
     </div>
-  </div>
 
-  <!-- Withdraw Page -->
-  <div id="withdraw-page" class="hidden page">
-    <button class="back-btn" onclick="goDashboard()">← Back</button>
-    <div class="glass" style="padding:25px;">
-      <h2>💸 Withdraw</h2>
-      <select id="wd-type" class="input-wrap" style="width:100%;"><option value="">-- Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
-      <input type="text" id="wd-num" class="input-wrap" style="width:100%;" placeholder="Account Number">
-      <input type="text" id="wd-title" class="input-wrap" style="width:100%;" placeholder="Account Title">
-      <input type="number" id="wd-amt" class="input-wrap" style="width:100%;" placeholder="Amount (Min: 30)">
-      <button class="btn-grad" onclick="submitWithdraw()">Send Request</button>
-    </div>
-  </div>
+    <!-- ============ WHATSAPP FLOAT ============ -->
+    <a href="https://wa.me/258867532400" class="whatsapp-float" target="_blank">💬</a>
 
-  <!-- History Page -->
-  <div id="history-page" class="hidden page">
-    <button class="back-btn" onclick="goDashboard()">← Back</button>
-    <h2 id="hist-title"></h2>
-    <div id="hist-content"></div>
-  </div>
+    <!-- ============ TOAST ============ -->
+    <div id="toast" class="toast"></div>
 
-  <!-- Leaderboard -->
-  <div id="leaderboard-page" class="hidden page">
-    <button class="back-btn" onclick="goDashboard()">← Back</button>
-    <h2>🏆 Leaderboard</h2>
-    <div class="glass" style="padding:20px;"><h3>Top Investors</h3><div id="top-inv"></div></div>
-    <div class="glass" style="padding:20px; margin-top:15px;"><h3>Top Referrers</h3><div id="top-ref"></div></div>
-  </div>
-
-  <!-- FAQ -->
-  <div id="faq-page" class="hidden page">
-    <button class="back-btn" onclick="goDashboard()">← Back</button>
-    <h2>❓ FAQ</h2>
-    <div id="faq-list"></div>
-  </div>
-</div>
-
-<a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
-<div id="toast" class="toast"></div>
-
-<script>
-const API='';let token=localStorage.getItem('token'),selPlan=null,accData=null;
-
-function $(id){return document.getElementById(id)}
-function hideAll(){['auth-page','dashboard-page','plans-page','withdraw-page','history-page','leaderboard-page','faq-page'].forEach(id=>$(id).classList.add('hidden'))}
-function toast(m,t='info'){const el=$('toast');el.textContent=m;el.className='toast '+t;el.style.display='block';setTimeout(()=>el.style.display='none',3000)}
-
-function showSignup(){$(login-card).classList.add('hidden');$(signup-card).classList.remove('hidden')}
-function showLogin(){$(signup-card).classList.add('hidden');$(login-card).classList.remove('hidden')}
-function goDashboard(){hideAll();$('dashboard-page').classList.remove('hidden');loadDash()}
-
-async function doSignup(){
-  const d={username:$('signup-user').value,whatsapp:$('signup-wa').value,password:$('signup-pass').value,referralCode:$('signup-ref').value};
-  try{
-    const r=await fetch(API+'/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-    const j=await r.json();
-    if(r.ok){localStorage.setItem('token',j.token);token=j.token;goDashboard();toast('Welcome! 🎉','success')}
-    else toast(j.error,'error')
-  }catch(e){toast('Error: '+e.message,'error')}
-}
-
-async function doLogin(){
-  const d={username:$('login-user').value,password:$('login-pass').value};
-  try{
-    const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-    const j=await r.json();
-    if(r.ok){localStorage.setItem('token',j.token);token=j.token;goDashboard();toast('Welcome back! 👋','success')}
-    else toast(j.error,'error')
-  }catch(e){toast('Error: '+e.message,'error')}
-}
-
-function logout(){localStorage.removeItem('token');token=null;hideAll();$('auth-page').classList.remove('hidden');showLogin()}
-
-async function loadDash(){
-  try{
-    const r=await fetch(API+'/api/dashboard',{headers:{'Authorization':token}});
-    const d=await r.json();
-    $('dash-user').textContent='👋 '+d.username;
-    $('dash-balance').textContent=(d.balance||0).toFixed(2);
-    $('s-today').textContent='PKR '+(d.todayProfit||0).toFixed(2);
-    $('s-invested').textContent='PKR '+(d.totalInvested||0).toFixed(0);
-    $('s-earned').textContent='PKR '+(d.totalEarned||0).toFixed(0);
-    $('s-refs').textContent=d.referralCount||0;
-    $('ref-link').textContent=window.location.origin+'?ref='+d.referralCode;
-  }catch(e){toast('Error loading dashboard','error')}
-}
-
-async function showPlansPage(){
-  hideAll();$('plans-page').classList.remove('hidden');
-  try{
-    const r=await fetch(API+'/api/plans',{headers:{'Authorization':token}});
-    const plans=await r.json();
-    $('plans-grid').innerHTML=plans.map(p=>`
-      <div class="plan-card glass" onclick="selectPlan(${p.planId},${p.amount},'${p.name}')">
-        <div class="plan-name">${p.name}</div>
-        <div class="plan-amt">PKR ${p.amount}</div>
-        <div class="plan-info">📈 ${p.dailyProfit}% Daily | 📅 ${p.duration} Days</div>
-        <div class="plan-info">💎 Total: PKR ${(p.amount*p.dailyProfit/100*p.duration).toFixed(0)}</div>
-      </div>
-    `).join('');
-  }catch(e){toast('Error','error')}
-}
-
-function selectPlan(id,amt,name){
-  selPlan={id,amt,name};
-  document.querySelectorAll('.plan-card').forEach(c=>c.classList.remove('selected'));
-  event.target.closest('.plan-card').classList.add('selected');
-  $('sel-plan-name').textContent=name;
-  $('sel-plan-amt').textContent=amt;
-  $('deposit-form').classList.remove('hidden');
-}
-
-async function showAcc(){
-  const t=$('dep-acc-type').value;if(!t)return;
-  if(!accData){
-    const r=await fetch(API+'/api/deposit-accounts',{headers:{'Authorization':token}});
-    accData=await r.json();
-  }
-  const a=accData[t];
-  $('acc-details').classList.remove('hidden');
-  $('acc-details').innerHTML=`<div class="glass" style="padding:15px;"><p>📱 ${t.toUpperCase()}: <strong>${a.number}</strong> <button class="btn-sm" onclick="navigator.clipboard.writeText('${a.number}');toast('Copied!','success')">📋</button></p><p>📛 ${a.title}</p></div>`;
-}
-
-async function submitDeposit(){
-  if(!selPlan)return toast('Select a plan!','error');
-  const fd=new FormData();
-  fd.append('planId',selPlan.id);fd.append('accountType',$('dep-acc-type').value);
-  fd.append('txId',$('dep-txid').value);fd.append('screenshot',$('dep-ss').files[0]);
-  try{
-    const r=await fetch(API+'/api/deposit',{method:'POST',headers:{'Authorization':token},body:fd});
-    const j=await r.json();
-    if(r.ok){toast('Deposit submitted! ✅','success');goDashboard()}
-    else toast(j.error,'error')
-  }catch(e){toast('Error','error')}
-}
-
-function showWithdrawPage(){hideAll();$('withdraw-page').classList.remove('hidden')}
-async function submitWithdraw(){
-  const d={accountType:$('wd-type').value,accountNumber:$('wd-num').value,accountTitle:$('wd-title').value,amount:parseFloat($('wd-amt').value)};
-  try{
-    const r=await fetch(API+'/api/withdraw',{method:'POST',headers:{'Content-Type':'application/json','Authorization':token},body:JSON.stringify(d)});
-    const j=await r.json();
-    if(r.ok){toast('Withdrawal submitted! ✅','success');goDashboard()}
-    else toast(j.error,'error')
-  }catch(e){toast('Error','error')}
-}
-
-async function viewPlan(){
-  const r=await fetch(API+'/api/dashboard',{headers:{'Authorization':token}});
-  const d=await r.json();
-  if(d.activePlan){toast(`${d.activePlan.name}\nDaily: PKR ${d.activePlan.dailyProfit}\nDay: ${d.activePlan.profitDays}/60`,'info')}
-  else toast('No active plan!','error')
-}
-
-async function showHistory(t){
-  hideAll();$('history-page').classList.remove('hidden');
-  $('hist-title').textContent=t==='deposits'?'📥 Deposits':t==='withdrawals'?'📤 Withdrawals':'📊 All Transactions';
-  const url=t==='deposits'?'/api/deposits':t==='withdrawals'?'/api/withdrawals':'/api/transactions';
-  const r=await fetch(API+url,{headers:{'Authorization':token}});
-  const items=await r.json();
-  $('hist-content').innerHTML=items.length?items.map(i=>`
-    <div class="hist-item ${i.status}">
-      <strong>${i.type.toUpperCase()}</strong> | PKR ${i.amount} | <span style="color:${i.status==='approved'?'#4ade80':i.status==='rejected'?'#f87171':'#fbbf24'}">${i.status}</span>
-      <br><small>${new Date(i.createdAt).toLocaleDateString()}</small>
-    </div>`).join(''):'<p>No records</p>';
-}
-
-async function showTeam(){
-  hideAll();$('history-page').classList.remove('hidden');
-  $('hist-title').textContent='👥 My Team';
-  const r=await fetch(API+'/api/team',{headers:{'Authorization':token}});
-  const d=await r.json();
-  $('hist-content').innerHTML=`<p>Total: <strong>${d.teamCount}</strong> members</p>`+d.team.map(m=>`<div class="hist-item"><strong>${m.username}</strong> | PKR ${m.totalInvested||0} | ${new Date(m.createdAt).toLocaleDateString()}</div>`).join('');
-}
-
-async function showLeaderboard(){
-  hideAll();$('leaderboard-page').classList.remove('hidden');
-  const r=await fetch(API+'/api/leaderboard',{headers:{'Authorization':token}});
-  const d=await r.json();
-  $('top-inv').innerHTML=d.topInvestors.map((u,i)=>`<p>${i+1}. ${u.username} - PKR ${u.totalInvested}</p>`).join('');
-  $('top-ref').innerHTML=d.topReferrers.map((u,i)=>`<p>${i+1}. ${u.username} - ${u.count} refs</p>`).join('');
-}
-
-async function showFaqs(){
-  hideAll();$('faq-page').classList.remove('hidden');
-  const r=await fetch(API+'/api/faqs');
-  const faqs=await r.json();
-  $('faq-list').innerHTML=faqs.map(f=>`<div class="glass" style="padding:20px;margin:10px 0;"><h3>${f.question}</h3><p>${f.answer}</p></div>`).join('');
-}
-
-function copyRef(){navigator.clipboard.writeText($('ref-link').textContent);toast('Copied! 📋','success')}
-
-// Init
-if(token){hideAll();$('dashboard-page').classList.remove('hidden');loadDash()}
-</script>
+    <!-- ============ SCRIPTS ============ -->
+    <script src="js/script.js"></script>
 </body>
 </html>
