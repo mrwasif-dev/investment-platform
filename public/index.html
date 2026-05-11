@@ -1,323 +1,233 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profit 24 - Investment Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root{--bg:#060610;--card:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.08);--p:#818cf8;--a:#f472b6;--gold:#fbbf24;--green:#4ade80;--red:#f87171;--r:20px;}
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Cairo',sans-serif;background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden}
-        body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,0.1)0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(236,72,153,0.07)0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(34,211,238,0.06)0%,transparent 50%);pointer-events:none;z-index:0;animation:bgS 20s infinite}
-        @keyframes bgS{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
-        .gl{position:relative;z-index:1;background:var(--card);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
-        .ct{max-width:900px;margin:0 auto;padding:20px}
-        .h{display:none!important}
-        .inp{width:100%;padding:16px 20px;background:rgba(255,255,255,0.04);border:2px solid var(--border);border-radius:14px;color:#fff;font-size:15px;font-family:'Cairo',sans-serif;margin:10px 0;transition:all 0.35s;outline:none}
-        .inp:focus{border-color:var(--p);box-shadow:0 0 0 4px rgba(129,140,248,0.12);background:rgba(255,255,255,0.07)}
-        .inp::placeholder{color:rgba(255,255,255,0.35)}
-        select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 16px center}
-        .btn{width:100%;padding:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6,#d946ef);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin:18px 0;font-family:'Cairo',sans-serif;transition:all 0.35s;position:relative;overflow:hidden}
-        .btn:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(99,102,241,0.45)}
-        .btn:active{transform:scale(0.97)}
-        .btn-sm{padding:10px 18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:10px;cursor:pointer;font-size:13px;font-family:'Cairo',sans-serif;transition:all 0.3s}
-        .btn-sm:hover{background:rgba(255,255,255,0.15)}
-        .btn-o{padding:14px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:14px;cursor:pointer;font-size:14px;font-family:'Cairo',sans-serif;flex:1;text-align:center;transition:all 0.3s}
-        .btn-o:hover{background:rgba(255,255,255,0.06)}
-        .btn-r{border-color:rgba(248,113,113,0.4)!important;color:#f87171!important}
-        .back{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:10px 20px;border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:14px;margin-bottom:20px}
-        .auth-card{background:var(--card);backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:var(--r);padding:45px 35px;max-width:440px;margin:60px auto;text-align:center;animation:fadeUp 0.6s ease;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(40px)scale(0.95)}to{opacity:1;transform:translateY(0)scale(1)}}
-        .logo{font-size:44px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
-        .sub{color:rgba(255,255,255,0.5);margin-bottom:30px;font-size:14px}
-        .link{color:var(--p);cursor:pointer;font-size:14px;margin-top:15px}.link:hover{color:#c4b5fd}
-        .hcard{padding:30px;text-align:center;margin-bottom:25px}
-        .bal{font-size:52px;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f59e0b,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:15px 0;animation:pulse 2s infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.82}}
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
-        .stat{padding:18px 10px;background:rgba(255,255,255,0.025);border-radius:14px;text-align:center;border:1px solid rgba(255,255,255,0.04);transition:all 0.3s}
-        .stat:hover{background:rgba(255,255,255,0.05);transform:translateY(-2px)}
-        .sv{font-size:20px;font-weight:700;color:#a78bfa}.sl{font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
-        .mg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:25px 0}
-        .mc{background:rgba(255,255,255,0.025);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:18px;padding:24px 12px;text-align:center;cursor:pointer;transition:all 0.4s;font-size:13px;font-weight:600}
-        .mc:hover{transform:translateY(-6px);background:rgba(99,102,241,0.1);border-color:rgba(129,140,248,0.3);box-shadow:0 12px 30px rgba(99,102,241,0.15)}
-        .mi{font-size:34px;display:block;margin-bottom:10px;animation:float 3s ease-in-out infinite}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-        .mc:nth-child(1) .mi{animation-delay:0s}.mc:nth-child(2) .mi{animation-delay:0.15s}.mc:nth-child(3) .mi{animation-delay:0.3s}.mc:nth-child(4) .mi{animation-delay:0.45s}.mc:nth-child(5) .mi{animation-delay:0.6s}.mc:nth-child(6) .mi{animation-delay:0.75s}.mc:nth-child(7) .mi{animation-delay:0.9s}
-        .ref-box{padding:22px;text-align:center;margin:18px 0}
-        .ref-box code{background:rgba(0,0,0,0.4);padding:10px 14px;border-radius:10px;font-size:13px;display:block;margin:12px 0;color:#a78bfa;word-break:break-all;border:1px dashed rgba(129,140,248,0.3);direction:ltr}
-        .bnav{display:flex;gap:12px;margin-top:20px}
-        .pt{text-align:center;margin:20px 0;font-size:24px}
-        .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
-        .pc{padding:28px;text-align:center;cursor:pointer;transition:all 0.4s;position:relative;overflow:hidden}
-        .pc:hover{transform:translateY(-8px);border-color:rgba(129,140,248,0.4);box-shadow:0 24px 48px rgba(99,102,241,0.12)}
-        .pc.sel{border-color:#4ade80!important;box-shadow:0 0 0 3px rgba(74,222,128,0.15),0 0 30px rgba(74,222,128,0.1)!important}
-        .pn{font-size:22px;font-weight:700;background:linear-gradient(135deg,#c4b5fd,#f9a8d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1}
-        .pa{font-size:36px;font-weight:900;color:#fbbf24;margin:10px 0;position:relative;z-index:1}
-        .pi{color:rgba(255,255,255,0.5);font-size:13px;margin:5px 0;position:relative;z-index:1}
-        .fc{padding:30px;margin-top:15px}
-        /* Professional History Cards */
-        .hist-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;padding:20px;margin:12px 0;transition:all 0.3s;animation:fadeIn 0.4s ease}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .hist-card:hover{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15)}
-        .hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-        .hist-type{font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.5px}
-        .hist-status{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
-        .status-pending{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)}
-        .status-approved{background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)}
-        .status-rejected{background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3)}
-        .hist-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-        .hist-item{display:flex;flex-direction:column}
-        .hist-label{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
-        .hist-value{font-size:14px;font-weight:600;color:#fff}
-        .hist-value.amount{color:#fbbf24;font-size:18px;font-weight:900}
-        .hist-timeline{display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:rgba(255,255,255,0.5)}
-        .hist-timeline span strong{color:rgba(255,255,255,0.7)}
-        .hist-plan{background:rgba(129,140,248,0.1);padding:4px 10px;border-radius:8px;font-size:11px;color:#a78bfa;display:inline-block;margin-top:8px}
-        /* WhatsApp */
-        .wa{position:fixed;bottom:30px;right:30px;width:60px;height:60px;background:#25d366;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;text-decoration:none;box-shadow:0 8px 30px rgba(37,211,102,0.4);z-index:9999;animation:waPulse 2s infinite}
-        @keyframes waPulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,0.5)}70%{box-shadow:0 0 0 22px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
-        .wa:hover{transform:scale(1.1)rotate(-5deg)}
-        .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:16px 28px;border-radius:14px;color:#fff;font-weight:600;z-index:99999;font-size:15px;backdrop-filter:blur(20px);display:none;animation:toastIn 0.4s ease}
-        @keyframes toastIn{from{opacity:0;transform:translateX(-50%)translateY(-20px)scale(0.9)}to{opacity:1;transform:translateX(-50%)translateY(0)scale(1)}}
-        .toast.s{background:rgba(74,222,128,0.85)}.toast.e{background:rgba(248,113,113,0.85)}.toast.i{background:rgba(129,140,248,0.85)}
-        /* Payment Method Cards */
-        .pay-card{background:var(--card);backdrop-filter:blur(20px);border:2px solid var(--border);border-radius:20px;padding:30px;text-align:center;cursor:pointer;transition:all 0.4s}
-        .pay-card:hover{border-color:var(--p);transform:translateY(-5px);box-shadow:0 15px 40px rgba(99,102,241,0.2)}
-        .pay-icon{font-size:50px;margin-bottom:15px}
-        .pay-name{font-size:22px;font-weight:700;margin-bottom:10px}
-        .pay-info{color:rgba(255,255,255,0.5);font-size:13px}
-        @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.mg{grid-template-columns:repeat(2,1fr)}.bal{font-size:38px}.pg{grid-template-columns:1fr}.auth-card{padding:30px 22px;margin:30px auto}.logo{font-size:34px}.hist-body{grid-template-columns:1fr}}
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- AUTH -->
+<!-- AUTH SECTION -->
 <div id="authSection">
-    <div class="auth-card" id="loginCard"><div class="logo">💎 Profit 24</div><div class="sub">Secure Investment Platform</div><input class="inp" id="loginUser" placeholder="Username"><input class="inp" type="password" id="loginPass" placeholder="Password"><button class="btn" onclick="doLogin()">🚀 Sign In</button><p class="link" onclick="showSignup()">Create Account →</p></div>
-    <div class="auth-card h" id="signupCard"><div class="logo">✨ Join Now</div><div class="sub">Start Earning Daily</div><input class="inp" id="signupUser" placeholder="Username"><input class="inp" id="signupWA" placeholder="WhatsApp"><input class="inp" type="password" id="signupPass" placeholder="Password"><input class="inp" id="signupRef" placeholder="Referral Code"><button class="btn" onclick="doSignup()">✨ Create Account</button><p class="link" onclick="showLogin()">← Back</p></div>
+    <div class="auth-card" id="loginCard">
+        <div class="logo">💎 Profit 24</div>
+        <div class="subtitle">Secure Investment Platform</div>
+        <input type="text" class="inp" id="loginUser" placeholder="Username">
+        <input type="password" class="inp" id="loginPass" placeholder="Password">
+        <button class="btn" onclick="doLogin()">🚀 Sign In</button>
+        <p class="link" onclick="showSignup()">Create New Account →</p>
+    </div>
+    <div class="auth-card hidden" id="signupCard">
+        <div class="logo">✨ Join Now</div>
+        <div class="subtitle">Start Earning Daily Profits</div>
+        <input type="text" class="inp" id="signupUser" placeholder="Username">
+        <input type="text" class="inp" id="signupWA" placeholder="WhatsApp Number">
+        <input type="password" class="inp" id="signupPass" placeholder="Password (6+ characters)">
+        <input type="text" class="inp" id="signupRef" placeholder="Referral Code (Optional)">
+        <button class="btn" onclick="doSignup()">✨ Create Account</button>
+        <p class="link" onclick="showLogin()">← Back to Login</p>
+    </div>
 </div>
 
 <!-- DASHBOARD -->
-<div id="dashSection" class="ct h"><div class="gl hcard"><h2 id="dashUser">👋 Welcome</h2><div class="bal">PKR <span id="dashBal">0</span></div><div class="stats"><div class="stat"><div class="sv" id="sToday">0</div><div class="sl">Today</div></div><div class="stat"><div class="sv" id="sInv">0</div><div class="sl">Invested</div></div><div class="stat"><div class="sv" id="sEarn">0</div><div class="sl">Earned</div></div><div class="stat"><div class="sv" id="sRefs">0</div><div class="sl">Referrals</div></div></div></div><div class="mg"><div class="mc" onclick="goPlans()"><span class="mi">💰</span>Deposit</div><div class="mc" onclick="goWithdraw()"><span class="mi">💸</span>Widraw</div><div class="mc" onclick="viewPlan()"><span class="mi">📋</span>My Plan</div><div class="mc" onclick="goHist('deposits')"><span class="mi">📥</span>Deposit History</div><div class="mc" onclick="goHist('withdrawals')"><span class="mi">📤</span>Widraw History</div><div class="mc" onclick="goHist('all')"><span class="mi">📊</span>Transactions</div><div class="mc" onclick="goTeam()"><span class="mi">👥</span>My Team</div></div><div class="gl ref-box"><p>🔗 Referral Link:</p><code id="refLink">Loading...</code><button class="btn-sm" onclick="copyRef()">📋 Copy</button></div><div class="bnav"><button class="btn-o" onclick="goLead()">🏆 Leaderboard</button><button class="btn-o" onclick="goFaq()">❓ FAQ</button><button class="btn-o btn-r" onclick="doLogout()">🚪 Logout</button></div></div>
+<div id="dashSection" class="container hidden">
+    <div class="glass header-card">
+        <div style="display:flex;align-items:center;justify-content:center;gap:15px;">
+            <img id="dashDP" src="" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #a78bfa;display:none;" alt="DP">
+            <div>
+                <h2 id="dashUser">👋 Welcome</h2>
+                <p style="color:rgba(255,255,255,0.5);font-size:13px;">PID: <span id="dashPID">---</span></p>
+            </div>
+        </div>
+        <div class="balance">PKR <span id="dashBal">0.00</span></div>
+        <div class="stats-grid">
+            <div class="stat-box"><div class="stat-value" id="sToday">0</div><div class="stat-label">Today's Profit</div></div>
+            <div class="stat-box"><div class="stat-value" id="sInv">0</div><div class="stat-label">Total Invested</div></div>
+            <div class="stat-box"><div class="stat-value" id="sEarn">0</div><div class="stat-label">Total Earned</div></div>
+            <div class="stat-box"><div class="stat-value" id="sRefs">0</div><div class="stat-label">Referrals</div></div>
+            <div class="stat-box"><div class="stat-value" id="sRefBonus">0</div><div class="stat-label">Ref Bonus</div></div>
+            <div class="stat-box"><div class="stat-value" id="sDepPen" style="color:#fbbf24;">0</div><div class="stat-label">Deposit Pending</div></div>
+            <div class="stat-box"><div class="stat-value" id="sWdPen" style="color:#f87171;">0</div><div class="stat-label">Withdraw Pending</div></div>
+            <div class="stat-box"><div class="stat-value" id="sWdTotal">0</div><div class="stat-label">Total Withdrawn</div></div>
+        </div>
+    </div>
 
-<!-- PLANS LIST -->
-<div id="plansSection" class="ct h"><button class="back" onclick="goDash()">← Back</button><h2 class="pt">📋 Select Investment Plan</h2><div class="pg" id="plansGrid"></div></div>
+    <div class="menu-grid">
+        <div class="menu-card" onclick="goDeposit()"><span class="menu-icon">💰</span>Deposit</div>
+        <div class="menu-card" onclick="goWithdraw()"><span class="menu-icon">💸</span>Withdraw</div>
+        <div class="menu-card" onclick="viewPlan()"><span class="menu-icon">📋</span>My Plan</div>
+        <div class="menu-card" onclick="goHistory('deposits')"><span class="menu-icon">📥</span>Deposit History</div>
+        <div class="menu-card" onclick="goHistory('withdrawals')"><span class="menu-icon">📤</span>Withdraw History</div>
+        <div class="menu-card" onclick="goHistory('all')"><span class="menu-icon">📊</span>Transactions</div>
+        <div class="menu-card" onclick="goTeam()"><span class="menu-icon">👥</span>My Team</div>
+        <div class="menu-card" onclick="goTransfer()"><span class="menu-icon">🔄</span>Fund Transfer</div>
+        <div class="menu-card" onclick="goProfile()"><span class="menu-icon">👤</span>Profile</div>
+    </div>
 
-<!-- PAYMENT METHOD (NEXT PAGE) -->
-<div id="paymentSection" class="ct h"><button class="back" onclick="goPlans()">← Back to Plans</button><h2 class="pt">🏦 Select Payment Method</h2><p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px">Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong></p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px"><div class="pay-card" onclick="selectPayMethod('easypaisa')"><div class="pay-icon">📱</div><div class="pay-name">Easypaisa</div><div class="pay-info">Send payment via Easypaisa</div></div><div class="pay-card" onclick="selectPayMethod('jazzcash')"><div class="pay-icon">💼</div><div class="pay-name">JazzCash</div><div class="pay-info">Send payment via JazzCash</div></div></div></div>
+    <div class="glass ref-box">
+        <p>🔗 Your Referral Link:</p>
+        <code id="refLink">Loading...</code>
+        <button class="btn-sm" onclick="copyRef()">📋 Copy Link</button>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="btn-o" onclick="goLeaderboard()">🏆 Leaderboard</button>
+        <button class="btn-o" onclick="goFAQ()">❓ FAQ</button>
+        <button class="btn-o" onclick="openSupport()">💬 Support</button>
+        <button class="btn-o btn-r" onclick="doLogout()">🚪 Logout</button>
+    </div>
+</div>
+
+<!-- PLANS PAGE -->
+<div id="plansSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <h2 class="page-title">📋 Select Investment Plan</h2>
+    <div class="plans-grid" id="plansGrid"></div>
+</div>
+
+<!-- PAYMENT METHOD PAGE -->
+<div id="paymentSection" class="container hidden">
+    <button class="back-btn" onclick="goPlans()">← Back</button>
+    <h2 class="page-title">🏦 Select Payment Method</h2>
+    <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px;">Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong></p>
+    <div class="pay-grid">
+        <div class="pay-card" onclick="selectPayment('easypaisa')"><div class="pay-icon">📱</div><div class="pay-name">Easypaisa</div><div class="pay-info">Send payment via Easypaisa</div></div>
+        <div class="pay-card" onclick="selectPayment('jazzcash')"><div class="pay-icon">💼</div><div class="pay-name">JazzCash</div><div class="pay-info">Send payment via JazzCash</div></div>
+    </div>
+</div>
 
 <!-- DEPOSIT FORM -->
-<div id="depositSection" class="ct h"><button class="back" onclick="goPayment()">← Back</button><div class="gl fc"><h2>💳 Complete Deposit</h2><p style="margin:10px 0">Method: <strong id="depMethod"></strong></p><div id="accInfo" style="margin:15px 0"></div><input type="file" class="inp" id="depSS" accept="image/*"><input class="inp" id="depTx" placeholder="Transaction ID"><button class="btn" onclick="subDep()">📤 Submit Deposit</button></div></div>
+<div id="depositSection" class="container hidden">
+    <button class="back-btn" onclick="goPayment()">← Back</button>
+    <div class="glass form-card">
+        <h2>💳 Complete Deposit</h2>
+        <p style="margin:10px 0;">Method: <strong id="depMethod"></strong></p>
+        <div id="accInfo" style="margin:15px 0;"></div>
+        <input type="file" class="inp" id="depSS" accept="image/*">
+        <input type="text" class="inp" id="depTx" placeholder="Transaction ID">
+        <button class="btn" onclick="submitDeposit()">📤 Submit Deposit</button>
+    </div>
+</div>
 
-<!-- WITHDRAW -->
-<div id="withSection" class="ct h"><button class="back" onclick="goDash()">← Back</button><div class="gl fc"><h2>💸 Withdraw</h2><select class="inp" id="wdType"><option value="">-- Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select><input class="inp" id="wdNum" placeholder="Account Number"><input class="inp" id="wdTitle" placeholder="Account Title"><input type="number" class="inp" id="wdAmt" placeholder="Amount (Min:30)"><button class="btn" onclick="subWd()">📤 Send Request</button></div></div>
+<!-- WITHDRAW PAGE -->
+<div id="withSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <div class="glass form-card">
+        <h2>💸 Withdraw Funds</h2>
+        <div class="balance-display" style="margin:15px 0;text-align:center;">
+            <span style="color:rgba(255,255,255,0.6);">Available Balance:</span>
+            <span style="font-size:28px;font-weight:900;color:#fbbf24;display:block;" id="wdBalance">PKR 0.00</span>
+        </div>
+        <select class="inp" id="wdType"><option value="">-- Select Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+        <input type="text" class="inp" id="wdNum" placeholder="Account Number">
+        <input type="text" class="inp" id="wdTitle" placeholder="Account Title">
+        <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min: 30)">
+        <button class="btn" onclick="submitWithdraw()">📤 Send Request</button>
+    </div>
+</div>
 
-<!-- HISTORY -->
-<div id="histSection" class="ct h"><button class="back" onclick="goDash()">← Back</button><h2 class="pt" id="histTitle"></h2><div id="histContent"></div></div>
+<!-- FUND TRANSFER PAGE -->
+<div id="transferSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <div class="glass form-card">
+        <h2>🔄 Fund Transfer</h2>
+        <div class="balance-display" style="margin:15px 0;text-align:center;">
+            <span style="color:rgba(255,255,255,0.6);">Your Balance:</span>
+            <span style="font-size:28px;font-weight:900;color:#fbbf24;display:block;" id="tfBalance">PKR 0.00</span>
+        </div>
+        <input type="text" class="inp" id="tfPID" placeholder="Receiver's PID">
+        <input type="number" class="inp" id="tfAmt" placeholder="Amount">
+        <button class="btn" onclick="verifyPID()">Next →</button>
+        <div id="tfConfirm" class="hidden" style="margin-top:20px;"></div>
+    </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="histSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <h2 class="page-title" id="histTitle"></h2>
+    <div id="histContent"></div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div id="profileSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <div class="glass form-card" style="text-align:center;">
+        <h2>👤 Profile</h2>
+        <img id="profileDP" src="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #a78bfa;margin:15px auto;display:block;" alt="DP">
+        <input type="file" class="inp" id="pfDP" accept="image/*">
+        <p style="color:rgba(255,255,255,0.6);">PID: <strong style="color:#a78bfa;" id="pfPID">---</strong></p>
+        <input type="text" class="inp" id="pfWA" placeholder="WhatsApp Number">
+        <input type="password" class="inp" id="pfPass" placeholder="New Password (leave blank)">
+        <button class="btn" onclick="updateProfile()">💾 Save Changes</button>
+    </div>
+</div>
 
 <!-- LEADERBOARD -->
-<div id="leadSection" class="ct h"><button class="back" onclick="goDash()">← Back</button><h2 class="pt">🏆 Leaderboard</h2><div class="gl fc"><h3>👑 Top Investors</h3><div id="topInv"></div></div><div class="gl fc" style="margin-top:15px"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div></div>
+<div id="leadSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <h2 class="page-title">🏆 Leaderboard</h2>
+    <div class="glass form-card"><h3>👑 Top Investors</h3><div id="topInv"></div></div>
+    <div class="glass form-card" style="margin-top:15px;"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div>
+</div>
 
 <!-- FAQ -->
-<div id="faqSection" class="ct h"><button class="back" onclick="goDash()">← Back</button><h2 class="pt">❓ FAQ</h2><div id="faqContent"></div></div>
+<div id="faqSection" class="container hidden">
+    <button class="back-btn" onclick="goDash()">← Back</button>
+    <h2 class="page-title">❓ Frequently Asked Questions</h2>
+    <div id="faqContent"></div>
+</div>
 
-<a href="https://wa.me/923000000000" class="wa" target="_blank">💬</a>
+<!-- SUPPORT MODAL -->
+<div id="supportModal" class="modal hidden">
+    <div class="modal-content glass">
+        <span class="modal-close" onclick="closeSupport()">✕</span>
+        <h2 style="text-align:center;margin-bottom:25px;">💬 Support</h2>
+        <div class="support-options">
+            <a href="https://wa.me/258867532400" target="_blank" class="support-card">
+                <div class="support-icon">📞</div>
+                <div class="support-name">Contact Admin</div>
+                <div class="support-info">Chat with Admin on WhatsApp</div>
+            </a>
+            <a href="https://whatsapp.com/channel/0029VbCIujEHAdNb1hxO4t2E" target="_blank" class="support-card">
+                <div class="support-icon">📢</div>
+                <div class="support-name">Support Channel</div>
+                <div class="support-info">Join our WhatsApp Channel</div>
+            </a>
+            <div class="support-card" onclick="openChat()">
+                <div class="support-icon">💬</div>
+                <div class="support-name">Live Chat</div>
+                <div class="support-info">Chat with AI Assistant</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CHAT WIDGET -->
+<div id="chatWidget" class="chat-widget hidden">
+    <div class="chat-header">
+        <span>💬 Profit 24 Assistant</span>
+        <span onclick="closeChat()" style="cursor:pointer;">✕</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-msg bot">Hello! 👋 I'm the Profit 24 assistant. Ask me anything about the platform!</div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" class="chat-input" placeholder="Type your question..." onkeypress="if(event.key==='Enter')sendChat()">
+        <button class="btn-sm" onclick="sendChat()" style="flex-shrink:0;">Send</button>
+    </div>
+</div>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
+
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
-var A='',token=localStorage.getItem('p24_token')||null,selPlan=null,selPayment=null,accounts=null;
-function $(id){return document.getElementById(id)}
-function toast(m,t){t=t||'i';var e=$('toast');e.textContent=m;e.className='toast '+t;e.style.display='block';setTimeout(function(){e.style.display='none'},4000)}
-function fmt(n){return(Number(n)||0).toLocaleString('en-US')}
-function hideAll(){['authSection','dashSection','plansSection','paymentSection','depositSection','withSection','histSection','leadSection','faqSection'].forEach(function(id){var e=$(id);if(e)e.classList.add('h')})}
-function goDash(){hideAll();$('dashSection').classList.remove('h');loadDash()}
-function showSignup(){$('loginCard').classList.add('h');$('signupCard').classList.remove('h')}
-function showLogin(){$('signupCard').classList.add('h');$('loginCard').classList.remove('h')}
-
-function doSignup(){
-    var u=$('signupUser').value.trim(),w=$('signupWA').value.trim(),p=$('signupPass').value.trim(),r=$('signupRef').value.trim();
-    if(!u||!w||!p)return toast('Fill all fields','e');
-    if(p.length<6)return toast('Password:6+chars','e');
-    var x=new XMLHttpRequest();
-    x.open('POST',A+'/api/signup',true);
-    x.setRequestHeader('Content-Type','application/json');
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){token=d.token;localStorage.setItem('p24_token',token);goDash();toast('Welcome!🎉','s')}else toast(d.error,'e')}catch(e){toast('Error','e')}};
-    x.send(JSON.stringify({username:u,whatsapp:w,password:p,referralCode:r}));
-}
-
-function doLogin(){
-    var u=$('loginUser').value.trim(),p=$('loginPass').value.trim();
-    if(!u||!p)return toast('Fill all fields','e');
-    var x=new XMLHttpRequest();
-    x.open('POST',A+'/api/login',true);
-    x.setRequestHeader('Content-Type','application/json');
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){token=d.token;localStorage.setItem('p24_token',token);goDash();toast('Welcome!👋','s')}else toast(d.error,'e')}catch(e){toast('Error','e')}};
-    x.send(JSON.stringify({username:u,password:p}));
-}
-
-function doLogout(){localStorage.removeItem('p24_token');token=null;hideAll();$('authSection').classList.remove('h');showLogin();toast('Logged out','i')}
-
-function loadDash(){
-    if(!token)return hideAll()||$('authSection').classList.remove('h');
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/dashboard',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){$('dashUser').textContent='👋 '+d.username;$('dashBal').textContent=(d.balance||0).toFixed(2);$('sToday').textContent='PKR '+fmt(d.todayProfit);$('sInv').textContent='PKR '+fmt(d.totalInvested);$('sEarn').textContent='PKR '+fmt(d.totalEarned);$('sRefs').textContent=d.referralCount||0;$('refLink').textContent=location.origin+'?ref='+d.referralCode}}catch(e){}};
-    x.send();
-}
-
-function goPlans(){hideAll();$('plansSection').classList.remove('h');$('paymentSection').classList.add('h');$('depositSection').classList.add('h');loadPlans()}
-function goPayment(){hideAll();$('paymentSection').classList.remove('h');loadPaymentPage()}
-function goWithdraw(){hideAll();$('withSection').classList.remove('h')}
-function goHist(t){hideAll();$('histSection').classList.remove('h');loadHist(t)}
-function goTeam(){hideAll();$('histSection').classList.remove('h');loadTeam()}
-function goLead(){hideAll();$('leadSection').classList.remove('h');loadLead()}
-function goFaq(){hideAll();$('faqSection').classList.remove('h');loadFaq()}
-
-function loadPlans(){
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/plans',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){var h='';for(var i=0;i<d.plans.length;i++){var p=d.plans[i];var tr=p.amount*(p.dailyProfit/100)*p.duration;h+='<div class="gl pc" onclick="pickPlan('+p.planId+','+p.amount+',\''+p.name+'\')"><div class="pn">'+p.name+'</div><div class="pa">PKR '+fmt(p.amount)+'</div><div class="pi">📈 '+p.dailyProfit+'% Daily | 📅 '+p.duration+' Days</div><div class="pi">💎 Total: PKR '+fmt(tr)+'</div></div>';}$('plansGrid').innerHTML=h}}catch(e){}};
-    x.send();
-}
-
-function pickPlan(id,amt,name){
-    selPlan={id:id,amt:amt,name:name};
-    document.querySelectorAll('.pc').forEach(function(c){c.classList.remove('sel')});
-    if(event&&event.target){var c=event.target.closest('.pc');if(c)c.classList.add('sel')}
-    setTimeout(function(){hideAll();$('paymentSection').classList.remove('h');loadPaymentPage()},300);
-}
-
-function loadPaymentPage(){
-    if(!selPlan)return goPlans();
-    $('payPlanName').textContent=selPlan.name;
-    $('payPlanAmt').textContent=fmt(selPlan.amt);
-}
-
-function selectPayMethod(method){
-    selPayment=method;
-    hideAll();
-    $('depositSection').classList.remove('h');
-    $('depMethod').textContent=method.toUpperCase();
-    loadAccountInfo(method);
-}
-
-function loadAccountInfo(method){
-    if(accounts){showAccInfo(method);return}
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/deposit-accounts',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){accounts=d;showAccInfo(method)}}catch(e){}};
-    x.send();
-}
-
-function showAccInfo(method){
-    var a=accounts[method];
-    $('accInfo').innerHTML='<div class="gl" style="padding:18px"><p>📱 <strong>'+method.toUpperCase()+'</strong></p><p>🔢 Number: <strong>'+a.number+'</strong> <button class="btn-sm" onclick="navigator.clipboard.writeText(\''+a.number+'\');toast(\'Copied!\',\'s\')">📋</button></p><p>📛 Title: <strong>'+a.title+'</strong></p></div>';
-}
-
-function subDep(){
-    if(!selPlan)return toast('No plan','e');
-    var tx=$('depTx').value.trim(),fi=$('depSS').files[0];
-    if(!tx||!fi)return toast('TxID + Screenshot!','e');
-    var fd=new FormData();
-    fd.append('planId',selPlan.id);fd.append('accountType',selPayment);fd.append('txId',tx);fd.append('screenshot',fi);
-    var x=new XMLHttpRequest();
-    x.open('POST',A+'/api/deposit',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){toast('Submitted!✅','s');goDash()}else toast(d.error,'e')}catch(e){toast('Error','e')}};
-    x.send(fd);
-}
-
-function subWd(){
-    var t=$('wdType').value,n=$('wdNum').value.trim(),ti=$('wdTitle').value.trim(),a=parseFloat($('wdAmt').value);
-    if(!t||!n||!ti||!a)return toast('All fields!','e');
-    var x=new XMLHttpRequest();
-    x.open('POST',A+'/api/withdraw',true);
-    x.setRequestHeader('Content-Type','application/json');
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success){toast('Submitted!✅','s');goDash()}else toast(d.error,'e')}catch(e){toast('Error','e')}};
-    x.send(JSON.stringify({accountType:t,accountNumber:n,accountTitle:ti,amount:a}));
-}
-
-function viewPlan(){
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/dashboard',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.success&&d.activePlan&&d.activePlan.planId){var p=d.activePlan;toast('📋 '+p.name+'\n💰 Daily:PKR '+p.dailyProfit.toFixed(2)+'\n📅 Day:'+p.profitDays+'/60','i')}else toast('No active plan','e')}catch(e){}};
-    x.send();
-}
-
-/* Professional History Rendering */
-function renderHistCards(items,type){
-    if(!items||!items.length)return '<p style="text-align:center;color:rgba(255,255,255,0.5);padding:40px">No records found</p>';
-    var h='';
-    for(var i=0;i<items.length;i++){
-        var it=items[i];
-        var statusClass='status-'+it.status;
-        var statusIcon=it.status==='approved'?'✅':it.status==='rejected'?'❌':'⏳';
-        var reqDate=new Date(it.createdAt);
-        var procDate=it.processedAt?new Date(it.processedAt):null;
-        var reqTime=reqDate.toLocaleDateString('ur-PK',{year:'numeric',month:'short',day:'numeric'})+' at '+reqDate.toLocaleTimeString('ur-PK',{hour:'2-digit',minute:'2-digit'});
-        var procTime=procDate?procDate.toLocaleDateString('ur-PK',{year:'numeric',month:'short',day:'numeric'})+' at '+procDate.toLocaleTimeString('ur-PK',{hour:'2-digit',minute:'2-digit'}):'---';
-        var typeLabel=it.type==='deposit'?'📥 DEPOSIT':it.type==='withdraw'?'📤 WITHDRAWAL':it.type==='profit'?'💎 PROFIT':'🎁 REFERRAL';
-        h+='<div class="hist-card">';
-        h+='<div class="hist-header"><span class="hist-type">'+typeLabel+'</span><span class="hist-status '+statusClass+'">'+statusIcon+' '+it.status.toUpperCase()+'</span></div>';
-        h+='<div class="hist-body">';
-        h+='<div class="hist-item"><span class="hist-label">Amount</span><span class="hist-value amount">PKR '+fmt(it.amount)+'</span></div>';
-        if(it.accountType)h+='<div class="hist-item"><span class="hist-label">Method</span><span class="hist-value">'+it.accountType.toUpperCase()+'</span></div>';
-        if(it.txId)h+='<div class="hist-item"><span class="hist-label">Transaction ID</span><span class="hist-value" style="font-size:11px;word-break:break-all">'+it.txId+'</span></div>';
-        if(it.accountNumber)h+='<div class="hist-item"><span class="hist-label">Account</span><span class="hist-value">'+it.accountNumber+'</span></div>';
-        if(it.planName)h+='<div class="hist-item"><span class="hist-label">Plan</span><span class="hist-value">'+it.planName+'</span></div>';
-        if(it.processingTime)h+='<div class="hist-item"><span class="hist-label">Processing Time</span><span class="hist-value">'+it.processingTime+'</span></div>';
-        h+='</div>';
-        h+='<div class="hist-timeline"><span>📅 Requested:<br><strong>'+reqTime+'</strong></span><span>'+it.status==='pending'?'⏳':'✅'+' Processed:<br><strong>'+procTime+'</strong></span></div>';
-        h+='</div>';
-    }
-    return h;
-}
-
-function loadHist(t){
-    var title=t==='deposits'?'📥 Deposit History':t==='withdrawals'?'📤 Withdrawal History':'📊 Transaction History';
-    var url=t==='deposits'?'/api/deposits':t==='withdrawals'?'/api/withdrawals':'/api/transactions';
-    $('histTitle').textContent=title;
-    var x=new XMLHttpRequest();
-    x.open('GET',A+url,true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);var items=d.deposits||d.withdrawals||d.transactions||[];$('histContent').innerHTML=renderHistCards(items,t)}catch(e){$('histContent').innerHTML='<p>Error loading data</p>'}};
-    x.send();
-}
-
-function loadTeam(){
-    $('histTitle').textContent='👥 My Team';
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/team',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);var h='<p style="margin-bottom:20px;font-size:18px">👥 Members:<strong> '+(d.teamCount||0)+'</strong></p>';if(d.team)for(var i=0;i<d.team.length;i++){var m=d.team[i];h+='<div class="hist-card"><div class="hist-header"><span class="hist-type">👤 '+m.username+'</span></div><div class="hist-body"><div class="hist-item"><span class="hist-label">Invested</span><span class="hist-value amount">PKR '+fmt(m.totalInvested)+'</span></div><div class="hist-item"><span class="hist-label">Joined</span><span class="hist-value">'+new Date(m.createdAt).toLocaleDateString()+'</span></div></div></div>';}$('histContent').innerHTML=h}catch(e){}};
-    x.send();
-}
-
-function loadLead(){
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/leaderboard',true);
-    x.setRequestHeader('Authorization',token);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);var h1='',h2='';if(d.topInvestors)for(var i=0;i<d.topInvestors.length;i++){h1+='<p>'+(i+1)+'. 🏅 '+d.topInvestors[i].username+' - PKR '+fmt(d.topInvestors[i].totalInvested)+'</p>'}if(d.topReferrers)for(var j=0;j<d.topReferrers.length;j++){h2+='<p>'+(j+1)+'. 🔗 '+d.topReferrers[j].username+' - '+(d.topReferrers[j].c||0)+' refs</p>'}$('topInv').innerHTML=h1||'<p>No data</p>';$('topRef').innerHTML=h2||'<p>No data</p>'}catch(e){}};
-    x.send();
-}
-
-function loadFaq(){
-    var x=new XMLHttpRequest();
-    x.open('GET',A+'/api/faqs',true);
-    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.faqs&&d.faqs.length){var h='';for(var i=0;i<d.faqs.length;i++){h+='<div class="gl fc" style="margin:14px 0"><h3 style="color:#a78bfa;margin-bottom:10px">❓ '+d.faqs[i].question+'</h3><p style="color:rgba(255,255,255,0.7)">'+d.faqs[i].answer+'</p></div>'}$('faqContent').innerHTML=h}else $('faqContent').innerHTML='<p style="text-align:center;padding:30px;color:rgba(255,255,255,0.5)">No FAQs</p>'}catch(e){}};
-    x.send();
-}
-
-function copyRef(){navigator.clipboard.writeText($('refLink').textContent);toast('Copied!📋','s')}
-
-if(token){hideAll();$('dashSection').classList.remove('h');loadDash()}else{hideAll();$('authSection').classList.remove('h');showLogin()}
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>
