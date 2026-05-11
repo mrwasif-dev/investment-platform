@@ -4,173 +4,782 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profit 24 - Investment Platform</title>
-    <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060610;
+            --card: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.08);
+            --primary: #818cf8;
+            --accent: #f472b6;
+            --gold: #fbbf24;
+            --green: #4ade80;
+            --red: #f87171;
+            --radius: 20px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.1) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(236,72,153,0.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(34,211,238,0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgShift 20s ease-in-out infinite;
+        }
+        @keyframes bgShift {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .glass {
+            position: relative;
+            z-index: 1;
+            background: var(--card);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .hidden { display: none !important; }
+        .inp {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.04);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 15px;
+            font-family: 'Cairo', sans-serif;
+            margin: 10px 0;
+            transition: all 0.35s;
+            outline: none;
+        }
+        .inp:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(129,140,248,0.12);
+            background: rgba(255,255,255,0.07);
+        }
+        .inp::placeholder { color: rgba(255,255,255,0.35); }
+        select.inp {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 16px center;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            margin: 18px 0;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.35s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(99,102,241,0.45); }
+        .btn:active { transform: scale(0.97); }
+        .btn-sm {
+            padding: 10px 18px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s;
+        }
+        .btn-sm:hover { background: rgba(255,255,255,0.15); }
+        .btn-outline {
+            padding: 14px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Cairo', sans-serif;
+            flex: 1;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.06); }
+        .btn-r { border-color: rgba(248,113,113,0.4) !important; color: #f87171 !important; }
+        .back-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        /* Auth */
+        .auth-card {
+            background: var(--card);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 45px 35px;
+            max-width: 440px;
+            margin: 60px auto;
+            text-align: center;
+            animation: fadeUp 0.6s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .logo {
+            font-size: 44px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #a78bfa, #f472b6, #fb923c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .sub { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 14px; }
+        .link { color: var(--primary); cursor: pointer; font-size: 14px; margin-top: 15px; }
+        .link:hover { color: #c4b5fd; }
+        /* Dashboard */
+        .header-card { padding: 30px; text-align: center; margin-bottom: 25px; }
+        .bal {
+            font-size: 52px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 15px 0;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.82; }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .stat {
+            padding: 18px 10px;
+            background: rgba(255,255,255,0.025);
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: all 0.3s;
+        }
+        .stat:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); }
+        .sv { font-size: 20px; font-weight: 700; color: #a78bfa; }
+        .sl { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Menu */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin: 25px 0;
+        }
+        .menu-card {
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .menu-card:hover {
+            transform: translateY(-6px);
+            background: rgba(99,102,241,0.1);
+            border-color: rgba(129,140,248,0.3);
+            box-shadow: 0 12px 30px rgba(99,102,241,0.15);
+        }
+        .mi { font-size: 34px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .menu-card:nth-child(1) .mi { animation-delay: 0s; }
+        .menu-card:nth-child(2) .mi { animation-delay: 0.15s; }
+        .menu-card:nth-child(3) .mi { animation-delay: 0.3s; }
+        .menu-card:nth-child(4) .mi { animation-delay: 0.45s; }
+        .menu-card:nth-child(5) .mi { animation-delay: 0.6s; }
+        .menu-card:nth-child(6) .mi { animation-delay: 0.75s; }
+        .menu-card:nth-child(7) .mi { animation-delay: 0.9s; }
+        /* Referral */
+        .ref-box { padding: 22px; text-align: center; margin: 18px 0; }
+        .ref-box code {
+            background: rgba(0,0,0,0.4);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: block;
+            margin: 12px 0;
+            color: #a78bfa;
+            word-break: break-all;
+            border: 1px dashed rgba(129,140,248,0.3);
+            direction: ltr;
+        }
+        .bottom-nav { display: flex; gap: 12px; margin-top: 20px; }
+        /* Plans */
+        .page-title { text-align: center; margin: 20px 0; font-size: 24px; }
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .plan-card {
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        .plan-card:hover { transform: translateY(-8px); border-color: rgba(129,140,248,0.4); box-shadow: 0 24px 48px rgba(99,102,241,0.12); }
+        .plan-card.sel { border-color: #4ade80 !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15), 0 0 30px rgba(74,222,128,0.1) !important; }
+        .pn { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #c4b5fd, #f9a8d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; position: relative; z-index: 1; }
+        .pa { font-size: 36px; font-weight: 900; color: #fbbf24; margin: 10px 0; position: relative; z-index: 1; }
+        .pi { color: rgba(255,255,255,0.5); font-size: 13px; margin: 5px 0; position: relative; z-index: 1; }
+        /* Forms */
+        .form-card { padding: 30px; margin-top: 15px; }
+        /* History */
+        .hi {
+            background: rgba(255,255,255,0.02);
+            border-left: 3px solid var(--primary);
+            padding: 14px 18px;
+            margin: 10px 0;
+            border-radius: 10px;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .hi.ap { border-left-color: #4ade80; }
+        .hi.rj { border-left-color: #f87171; }
+        .hi.pn { border-left-color: #fbbf24; }
+        /* WhatsApp */
+        .wa {
+            position: fixed;
+            bottom: 30px; right: 30px;
+            width: 60px; height: 60px;
+            background: #25d366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            text-decoration: none;
+            box-shadow: 0 8px 30px rgba(37,211,102,0.4);
+            z-index: 9999;
+            animation: waPulse 2s infinite;
+        }
+        @keyframes waPulse {
+            0% { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+            70% { box-shadow: 0 0 0 22px rgba(37,211,102,0); }
+            100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
+        }
+        .wa:hover { transform: scale(1.1) rotate(-5deg); }
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px; left: 50%;
+            transform: translateX(-50%);
+            padding: 16px 28px;
+            border-radius: 14px;
+            color: #fff;
+            font-weight: 600;
+            z-index: 99999;
+            font-size: 15px;
+            backdrop-filter: blur(20px);
+            display: none;
+            animation: toastIn 0.4s ease;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
+        .toast.s { background: rgba(74,222,128,0.85); }
+        .toast.e { background: rgba(248,113,113,0.85); }
+        .toast.i { background: rgba(129,140,248,0.85); }
+        @media (max-width: 640px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .menu-grid { grid-template-columns: repeat(2, 1fr); }
+            .bal { font-size: 38px; }
+            .plans-grid { grid-template-columns: 1fr; }
+            .auth-card { padding: 30px 22px; margin: 30px auto; }
+            .logo { font-size: 34px; }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- ============ AUTH SECTION ============ -->
+    <!-- AUTH -->
     <div id="authSection">
-        <!-- Login -->
         <div class="auth-card" id="loginCard">
             <div class="logo">💎 Profit 24</div>
-            <p class="subtitle">Secure Investment Platform</p>
-            <input type="text" id="loginUsername" class="input-field" placeholder="Username">
-            <input type="password" id="loginPassword" class="input-field" placeholder="Password">
-            <button class="btn-primary" onclick="handleLogin()">🚀 Sign In</button>
-            <p class="link-text" onclick="showSignupForm()">Create New Account →</p>
+            <div class="sub">Secure Investment Platform</div>
+            <input class="inp" id="loginUser" placeholder="Username">
+            <input class="inp" type="password" id="loginPass" placeholder="Password">
+            <button class="btn" onclick="doLogin()">🚀 Sign In</button>
+            <p class="link" onclick="showSignup()">Create New Account →</p>
         </div>
-
-        <!-- Signup -->
         <div class="auth-card hidden" id="signupCard">
             <div class="logo">✨ Join Now</div>
-            <p class="subtitle">Start Earning Daily Profits</p>
-            <input type="text" id="signupUsername" class="input-field" placeholder="Username">
-            <input type="text" id="signupWhatsapp" class="input-field" placeholder="WhatsApp Number">
-            <input type="password" id="signupPassword" class="input-field" placeholder="Password">
-            <input type="text" id="signupReferral" class="input-field" placeholder="Referral Code (Optional)">
-            <button class="btn-primary" onclick="handleSignup()">✨ Create Account</button>
-            <p class="link-text" onclick="showLoginForm()">← Back to Login</p>
+            <div class="sub">Start Earning Daily</div>
+            <input class="inp" id="signupUser" placeholder="Username">
+            <input class="inp" id="signupWA" placeholder="WhatsApp Number">
+            <input class="inp" type="password" id="signupPass" placeholder="Password">
+            <input class="inp" id="signupRef" placeholder="Referral Code (Optional)">
+            <button class="btn" onclick="doSignup()">✨ Create Account</button>
+            <p class="link" onclick="showLogin()">← Back to Login</p>
         </div>
     </div>
 
-    <!-- ============ DASHBOARD ============ -->
-    <div id="dashboardSection" class="container hidden">
-        <div class="header-card">
-            <h2 id="dashUsername">👋 Welcome</h2>
-            <div class="balance-display">PKR <span id="dashBalance">0.00</span></div>
-            <div class="stats-row">
-                <div class="stat-box">
-                    <div class="stat-value" id="statToday">0</div>
-                    <div class="stat-label">Today's Profit</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="statInvested">0</div>
-                    <div class="stat-label">Total Invested</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="statEarned">0</div>
-                    <div class="stat-label">Total Earned</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="statRefs">0</div>
-                    <div class="stat-label">Referrals</div>
-                </div>
+    <!-- DASHBOARD -->
+    <div id="dashSection" class="container hidden">
+        <div class="glass header-card">
+            <h2 id="dashUser">👋 Welcome</h2>
+            <div class="bal">PKR <span id="dashBal">0.00</span></div>
+            <div class="stats">
+                <div class="stat"><div class="sv" id="sToday">0</div><div class="sl">Today</div></div>
+                <div class="stat"><div class="sv" id="sInv">0</div><div class="sl">Invested</div></div>
+                <div class="stat"><div class="sv" id="sEarn">0</div><div class="sl">Earned</div></div>
+                <div class="stat"><div class="sv" id="sRefs">0</div><div class="sl">Referrals</div></div>
             </div>
         </div>
-
         <div class="menu-grid">
-            <div class="menu-card" onclick="navigateTo('plans')">
-                <span class="menu-icon">💰</span>Deposit
-            </div>
-            <div class="menu-card" onclick="navigateTo('withdraw')">
-                <span class="menu-icon">💸</span>Widraw
-            </div>
-            <div class="menu-card" onclick="viewActivePlan()">
-                <span class="menu-icon">📋</span>My Plan
-            </div>
-            <div class="menu-card" onclick="navigateTo('deposits')">
-                <span class="menu-icon">📥</span>Deposit Logs
-            </div>
-            <div class="menu-card" onclick="navigateTo('withdrawals')">
-                <span class="menu-icon">📤</span>Widraw Logs
-            </div>
-            <div class="menu-card" onclick="navigateTo('transactions')">
-                <span class="menu-icon">📊</span>History
-            </div>
-            <div class="menu-card" onclick="navigateTo('team')">
-                <span class="menu-icon">👥</span>My Team
-            </div>
+            <div class="menu-card" onclick="goPage('plans')"><span class="mi">💰</span>Deposit</div>
+            <div class="menu-card" onclick="goPage('withdraw')"><span class="mi">💸</span>Widraw</div>
+            <div class="menu-card" onclick="viewPlan()"><span class="mi">📋</span>My Plan</div>
+            <div class="menu-card" onclick="goPage('deposits')"><span class="mi">📥</span>Deposits</div>
+            <div class="menu-card" onclick="goPage('withdrawals')"><span class="mi">📤</span>Widraws</div>
+            <div class="menu-card" onclick="goPage('history')"><span class="mi">📊</span>History</div>
+            <div class="menu-card" onclick="goPage('team')"><span class="mi">👥</span>My Team</div>
         </div>
-
-        <div class="referral-card">
-            <p>🔗 Your Referral Link:</p>
-            <code id="referralLink">Loading...</code>
-            <button class="btn-sm" onclick="copyReferral()">📋 Copy Link</button>
+        <div class="glass ref-box">
+            <p>🔗 Referral Link:</p>
+            <code id="refLink">Loading...</code>
+            <button class="btn-sm" onclick="copyRef()">📋 Copy</button>
         </div>
-
         <div class="bottom-nav">
-            <button class="btn-outline" onclick="navigateTo('leaderboard')">🏆 Leaderboard</button>
-            <button class="btn-outline" onclick="navigateTo('faqs')">❓ FAQ</button>
-            <button class="btn-outline btn-danger" onclick="handleLogout()">🚪 Logout</button>
+            <button class="btn-outline" onclick="goPage('leader')">🏆 Leaderboard</button>
+            <button class="btn-outline" onclick="goPage('faqs')">❓ FAQ</button>
+            <button class="btn-outline btn-r" onclick="doLogout()">🚪 Logout</button>
         </div>
     </div>
 
-    <!-- ============ PLANS SECTION ============ -->
+    <!-- PLANS -->
     <div id="plansSection" class="container hidden">
-        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <button class="back-btn" onclick="goDash()">← Back</button>
         <h2 class="page-title">📋 Investment Plans</h2>
         <div class="plans-grid" id="plansGrid"></div>
-
-        <div id="depositForm" class="form-card hidden">
-            <h3>💳 Deposit - <span id="selectedPlanName"></span></h3>
-            <p>Amount: <strong>PKR <span id="selectedPlanAmount"></span></strong></p>
-            <select id="accountType" class="input-field" onchange="showAccountDetails()">
-                <option value="">-- Select Payment Method --</option>
-                <option value="easypaisa">Easypaisa</option>
-                <option value="jazzcash">JazzCash</option>
-            </select>
-            <div id="accountDetails" class="hidden"></div>
-            <input type="file" id="screenshotFile" class="input-field" accept="image/*">
-            <input type="text" id="transactionId" class="input-field" placeholder="Transaction ID">
-            <button class="btn-primary" onclick="submitDeposit()">📤 Submit Deposit</button>
+        <div class="glass form-card hidden" id="depForm" style="margin-top:25px">
+            <h3>💳 Deposit - <span id="selName"></span></h3>
+            <p style="margin:10px 0">Amount: <strong>PKR <span id="selAmt"></span></strong></p>
+            <select class="inp" id="depType" onchange="showAcc()"><option value="">-- Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+            <div id="accInfo" class="hidden"></div>
+            <input type="file" class="inp" id="depSS" accept="image/*">
+            <input class="inp" id="depTx" placeholder="Transaction ID">
+            <button class="btn" onclick="subDep()">📤 Submit Deposit</button>
         </div>
     </div>
 
-    <!-- ============ WITHDRAW SECTION ============ -->
-    <div id="withdrawSection" class="container hidden">
-        <button class="back-btn" onclick="goToDashboard()">← Back</button>
-        <div class="form-card">
-            <h2>💸 Withdraw Funds</h2>
-            <select id="wdAccountType" class="input-field">
-                <option value="">-- Select Method --</option>
-                <option value="easypaisa">Easypaisa</option>
-                <option value="jazzcash">JazzCash</option>
-            </select>
-            <input type="text" id="wdAccountNumber" class="input-field" placeholder="Account Number">
-            <input type="text" id="wdAccountTitle" class="input-field" placeholder="Account Title">
-            <input type="number" id="wdAmount" class="input-field" placeholder="Amount (Min: 30)">
-            <button class="btn-primary" onclick="submitWithdrawal()">📤 Send Request</button>
+    <!-- WITHDRAW -->
+    <div id="withSection" class="container hidden">
+        <button class="back-btn" onclick="goDash()">← Back</button>
+        <div class="glass form-card">
+            <h2 style="margin-bottom:20px">💸 Withdraw</h2>
+            <select class="inp" id="wdType"><option value="">-- Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+            <input class="inp" id="wdNum" placeholder="Account Number">
+            <input class="inp" id="wdTitle" placeholder="Account Title">
+            <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min:30)">
+            <button class="btn" onclick="subWd()">📤 Send Request</button>
         </div>
     </div>
 
-    <!-- ============ HISTORY SECTION ============ -->
-    <div id="historySection" class="container hidden">
-        <button class="back-btn" onclick="goToDashboard()">← Back</button>
-        <h2 class="page-title" id="historyTitle"></h2>
-        <div id="historyContent"></div>
+    <!-- HISTORY -->
+    <div id="histSection" class="container hidden">
+        <button class="back-btn" onclick="goDash()">← Back</button>
+        <h2 class="page-title" id="histTitle"></h2>
+        <div id="histContent"></div>
     </div>
 
-    <!-- ============ LEADERBOARD ============ -->
-    <div id="leaderboardSection" class="container hidden">
-        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+    <!-- LEADERBOARD -->
+    <div id="leadSection" class="container hidden">
+        <button class="back-btn" onclick="goDash()">← Back</button>
         <h2 class="page-title">🏆 Leaderboard</h2>
-        <div class="form-card">
-            <h3>👑 Top Investors</h3>
-            <div id="topInvestors"></div>
-        </div>
-        <div class="form-card" style="margin-top:15px;">
-            <h3>🔗 Top Referrers</h3>
-            <div id="topReferrers"></div>
-        </div>
+        <div class="glass form-card"><h3>👑 Top Investors</h3><div id="topInv"></div></div>
+        <div class="glass form-card" style="margin-top:15px"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div>
     </div>
 
-    <!-- ============ FAQ SECTION ============ -->
+    <!-- FAQ -->
     <div id="faqSection" class="container hidden">
-        <button class="back-btn" onclick="goToDashboard()">← Back</button>
+        <button class="back-btn" onclick="goDash()">← Back</button>
         <h2 class="page-title">❓ FAQ</h2>
-        <div id="faqList"></div>
+        <div id="faqContent"></div>
     </div>
 
-    <!-- ============ WHATSAPP FLOAT ============ -->
-    <a href="https://wa.me/258867532400" class="whatsapp-float" target="_blank">💬</a>
+    <a href="https://wa.me/923000000000" class="wa" target="_blank">💬</a>
+    <div class="toast" id="toast"></div>
 
-    <!-- ============ TOAST ============ -->
-    <div id="toast" class="toast"></div>
+    <script>
+    var API = '';
+    var token = localStorage.getItem('p24_token') || null;
+    var selPlan = null;
+    var accounts = null;
 
-    <!-- ============ SCRIPTS ============ -->
-    <script src="js/script.js"></script>
+    function $(id) { return document.getElementById(id); }
+    function toast(m, t) {
+        t = t || 'i';
+        var el = $('toast');
+        el.textContent = m;
+        el.className = 'toast ' + t;
+        el.style.display = 'block';
+        setTimeout(function() { el.style.display = 'none'; }, 4000);
+    }
+    function fmt(n) { return (Number(n) || 0).toLocaleString('en-US'); }
+    function hideAll() {
+        var ids = ['authSection', 'dashSection', 'plansSection', 'withSection', 'histSection', 'leadSection', 'faqSection'];
+        for (var i = 0; i < ids.length; i++) { var el = $(ids[i]); if (el) el.classList.add('hidden'); }
+    }
+    function showSec(id) { hideAll(); var el = $(id); if (el) el.classList.remove('hidden'); }
+    function goDash() { showSec('dashSection'); loadDash(); }
+
+    function showSignup() { $('loginCard').classList.add('hidden'); $('signupCard').classList.remove('hidden'); }
+    function showLogin() { $('signupCard').classList.add('hidden'); $('loginCard').classList.remove('hidden'); }
+
+    function doSignup() {
+        var u = $('signupUser').value.trim();
+        var w = $('signupWA').value.trim();
+        var p = $('signupPass').value.trim();
+        var r = $('signupRef').value.trim();
+        if (!u || !w || !p) return toast('Fill all fields', 'e');
+        if (p.length < 6) return toast('Password: 6+ chars', 'e');
+
+        toast('Creating...', 'i');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/api/signup', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) {
+                    token = d.token;
+                    localStorage.setItem('p24_token', token);
+                    showSec('dashSection');
+                    loadDash();
+                    toast('Welcome! 🎉', 's');
+                } else {
+                    toast(d.error || 'Failed', 'e');
+                }
+            } catch (e) {
+                toast('Error: ' + xhr.status, 'e');
+            }
+        };
+        xhr.onerror = function() { toast('Network error!', 'e'); };
+        xhr.send(JSON.stringify({ username: u, whatsapp: w, password: p, referralCode: r }));
+    }
+
+    function doLogin() {
+        var u = $('loginUser').value.trim();
+        var p = $('loginPass').value.trim();
+        if (!u || !p) return toast('Fill all fields', 'e');
+
+        toast('Logging in...', 'i');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/api/login', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) {
+                    token = d.token;
+                    localStorage.setItem('p24_token', token);
+                    showSec('dashSection');
+                    loadDash();
+                    toast('Welcome! 👋', 's');
+                } else {
+                    toast(d.error || 'Failed', 'e');
+                }
+            } catch (e) {
+                toast('Error: ' + xhr.status, 'e');
+            }
+        };
+        xhr.onerror = function() { toast('Network error!', 'e'); };
+        xhr.send(JSON.stringify({ username: u, password: p }));
+    }
+
+    function doLogout() { localStorage.removeItem('p24_token'); token = null; showSec('authSection'); showLogin(); toast('Logged out', 'i'); }
+
+    function loadDash() {
+        if (!token) return showSec('authSection');
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/dashboard', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) {
+                    $('dashUser').textContent = '👋 ' + d.username;
+                    $('dashBal').textContent = (d.balance || 0).toFixed(2);
+                    $('sToday').textContent = 'PKR ' + fmt(d.todayProfit);
+                    $('sInv').textContent = 'PKR ' + fmt(d.totalInvested);
+                    $('sEarn').textContent = 'PKR ' + fmt(d.totalEarned);
+                    $('sRefs').textContent = d.referralCount || 0;
+                    $('refLink').textContent = location.origin + '?ref=' + d.referralCode;
+                }
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function goPage(p) {
+        if (p === 'plans') { showSec('plansSection'); loadPlans(); }
+        else if (p === 'withdraw') { showSec('withSection'); }
+        else if (p === 'deposits') { showSec('histSection'); loadHist('deposits'); }
+        else if (p === 'withdrawals') { showSec('histSection'); loadHist('withdrawals'); }
+        else if (p === 'history') { showSec('histSection'); loadHist('all'); }
+        else if (p === 'team') { showSec('histSection'); loadTeam(); }
+        else if (p === 'leader') { showSec('leadSection'); loadLead(); }
+        else if (p === 'faqs') { showSec('faqSection'); loadFaq(); }
+    }
+
+    function loadPlans() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/plans', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) {
+                    var html = '';
+                    for (var i = 0; i < d.plans.length; i++) {
+                        var p = d.plans[i];
+                        var tr = p.amount * (p.dailyProfit / 100) * p.duration;
+                        html += '<div class="glass plan-card" onclick="pickPlan(' + p.planId + ',' + p.amount + ',\'' + p.name + '\')"><div class="pn">' + p.name + '</div><div class="pa">PKR ' + fmt(p.amount) + '</div><div class="pi">📈 ' + p.dailyProfit + '% Daily | 📅 ' + p.duration + ' Days</div><div class="pi">💎 Total: PKR ' + fmt(tr) + '</div></div>';
+                    }
+                    $('plansGrid').innerHTML = html;
+                }
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function pickPlan(id, amt, name) {
+        selPlan = { id: id, amt: amt, name: name };
+        var cards = document.querySelectorAll('.plan-card');
+        for (var i = 0; i < cards.length; i++) cards[i].classList.remove('sel');
+        if (event && event.target) {
+            var c = event.target.closest('.plan-card');
+            if (c) c.classList.add('sel');
+        }
+        $('selName').textContent = name;
+        $('selAmt').textContent = fmt(amt);
+        $('depForm').classList.remove('hidden');
+    }
+
+    function showAcc() {
+        var t = $('depType').value;
+        if (!t) return;
+        if (accounts) return dispAcc(t);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/deposit-accounts', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) { accounts = d; dispAcc(t); }
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function dispAcc(t) {
+        var a = accounts[t];
+        $('accInfo').classList.remove('hidden');
+        $('accInfo').innerHTML = '<div class="glass" style="padding:18px;margin-top:10px"><p>📱 ' + t.toUpperCase() + '</p><p>🔢 <strong>' + a.number + '</strong> <button class="btn-sm" onclick="copyTxt(\'' + a.number + '\')">📋</button></p><p>📛 <strong>' + a.title + '</strong></p></div>';
+    }
+
+    function copyTxt(t) { navigator.clipboard.writeText(t); toast('Copied!', 's'); }
+    function copyRef() { navigator.clipboard.writeText($('refLink').textContent); toast('Copied!', 's'); }
+
+    function subDep() {
+        if (!selPlan) return toast('Select plan!', 'e');
+        var at = $('depType').value, tx = $('depTx').value.trim(), fi = $('depSS').files[0];
+        if (!at || !tx || !fi) return toast('All fields + screenshot!', 'e');
+
+        var fd = new FormData();
+        fd.append('planId', selPlan.id);
+        fd.append('accountType', at);
+        fd.append('txId', tx);
+        fd.append('screenshot', fi);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/api/deposit', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) { toast('Submitted! ✅', 's'); goDash(); }
+                else toast(d.error || 'Failed', 'e');
+            } catch (e) { toast('Error', 'e'); }
+        };
+        xhr.send(fd);
+    }
+
+    function subWd() {
+        var t = $('wdType').value, n = $('wdNum').value.trim(), ti = $('wdTitle').value.trim(), a = parseFloat($('wdAmt').value);
+        if (!t || !n || !ti || !a) return toast('All fields!', 'e');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/api/withdraw', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success) { toast('Submitted! ✅', 's'); goDash(); }
+                else toast(d.error || 'Failed', 'e');
+            } catch (e) { toast('Error', 'e'); }
+        };
+        xhr.send(JSON.stringify({ accountType: t, accountNumber: n, accountTitle: ti, amount: a }));
+    }
+
+    function viewPlan() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/dashboard', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.success && d.activePlan && d.activePlan.planId) {
+                    var p = d.activePlan;
+                    toast('📋 ' + p.name + '\n💰 Daily: PKR ' + p.dailyProfit.toFixed(2) + '\n📅 Day: ' + p.profitDays + '/60', 'i');
+                } else toast('No active plan', 'e');
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function loadHist(t) {
+        var title = t === 'deposits' ? '📥 Deposits' : t === 'withdrawals' ? '📤 Withdrawals' : '📊 History';
+        var url = t === 'deposits' ? '/api/deposits' : t === 'withdrawals' ? '/api/withdrawals' : '/api/transactions';
+        $('histTitle').textContent = title;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + url, true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                var items = d.deposits || d.withdrawals || d.transactions || [];
+                if (!items.length) { $('histContent').innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.5);padding:30px">No records</p>'; return; }
+                var html = '';
+                for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    var sc = it.status === 'approved' ? 'ap' : it.status === 'rejected' ? 'rj' : 'pn';
+                    var color = it.status === 'approved' ? '#4ade80' : it.status === 'rejected' ? '#f87171' : '#fbbf24';
+                    html += '<div class="hi ' + sc + '"><strong>' + it.type.toUpperCase() + '</strong> | PKR ' + fmt(it.amount) + ' | <span style="color:' + color + '">' + it.status + '</span><br><small>' + new Date(it.createdAt).toLocaleDateString() + '</small></div>';
+                }
+                $('histContent').innerHTML = html;
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function loadTeam() {
+        $('histTitle').textContent = '👥 My Team';
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/team', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                var html = '<p style="margin-bottom:20px;font-size:18px">Total: <strong>' + (d.teamCount || 0) + '</strong></p>';
+                if (d.team) {
+                    for (var i = 0; i < d.team.length; i++) {
+                        var m = d.team[i];
+                        html += '<div class="hi"><strong>' + m.username + '</strong> | PKR ' + fmt(m.totalInvested) + ' | ' + new Date(m.createdAt).toLocaleDateString() + '</div>';
+                    }
+                }
+                $('histContent').innerHTML = html;
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function loadLead() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/leaderboard', true);
+        xhr.setRequestHeader('Authorization', token);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                var h1 = '', h2 = '';
+                if (d.topInvestors) for (var i = 0; i < d.topInvestors.length; i++) { var u = d.topInvestors[i]; h1 += '<div class="hi" style="animation-delay:' + (i * 0.05) + 's">' + (i + 1) + '. 🏅 <strong>' + u.username + '</strong> - PKR ' + fmt(u.totalInvested) + '</div>'; }
+                if (d.topReferrers) for (var j = 0; j < d.topReferrers.length; j++) { var r = d.topReferrers[j]; h2 += '<div class="hi" style="animation-delay:' + (j * 0.05) + 's">' + (j + 1) + '. 🔗 <strong>' + r.username + '</strong> - ' + (r.c || r.count || 0) + ' refs</div>'; }
+                $('topInv').innerHTML = h1 || '<p>No data</p>';
+                $('topRef').innerHTML = h2 || '<p>No data</p>';
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    function loadFaq() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/faqs', true);
+        xhr.onload = function() {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (d.faqs && d.faqs.length) {
+                    var html = '';
+                    for (var i = 0; i < d.faqs.length; i++) {
+                        var f = d.faqs[i];
+                        html += '<div class="glass form-card" style="margin:14px 0;animation:fadeIn 0.4s ease;animation-delay:' + (i * 0.08) + 's"><h3 style="color:#a78bfa;margin-bottom:10px">❓ ' + f.question + '</h3><p style="color:rgba(255,255,255,0.7)">' + f.answer + '</p></div>';
+                    }
+                    $('faqContent').innerHTML = html;
+                } else {
+                    $('faqContent').innerHTML = '<p style="text-align:center;padding:30px;color:rgba(255,255,255,0.5)">No FAQs</p>';
+                }
+            } catch (e) {}
+        };
+        xhr.send();
+    }
+
+    // INIT
+    if (token) { showSec('dashSection'); loadDash(); }
+    else { showSec('authSection'); showLogin(); }
+    </script>
 </body>
 </html>
