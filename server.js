@@ -6,26 +6,302 @@ const multer = require('multer');
 const cors = require('cors');
 const cron = require('node-cron');
 const axios = require('axios');
+const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+// ============ TELEGRAM BOT SETUP ============
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 
-// Multer config for screenshots
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+// Telegram Bot Commands
+bot.onText(/\/start/, (msg) => {
+  if (msg.chat.id.toString() !== ADMIN_ID) return;
+  
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📊 Dashboard Stats', callback_data: 'admin_dashboard' }],
+        [{ text: '👥 All Users', callback_data: 'admin_users' }],
+        [{ text: '💰 Pending Deposits', callback_data: 'admin_pending_deposits' }],
+        [{ text: '💸 Pending Withdrawals', callback_data: 'admin_pending_withdrawals' }],
+        [{ text: '📋 All Plans', callback_data: 'admin_plans' }],
+        [{ text: '⚙️ Settings', callback_data: 'admin_settings' }],
+        [{ text: '📢 Broadcast', callback_data: 'admin_broadcast' }],
+        [{ text: '❓ FAQ Manage', callback_data: 'admin_faq' }]
+      ]
+    }
+  };
+  
+  bot.sendMessage(ADMIN_ID, '🔐 *Admin Panel*\n\nWelcome! Select an option:', {
+    parse_mode: 'Markdown',
+    ...keyboard
+  });
+});
+
+// Bot Callback Handler
+bot.on('callback_query', async (query) => {
+  const chatId = query.message.chat.id;
+  if (chatId.toString() !== ADMIN_ID) return;
+
+  const action = query.data;
+  await bot.answerCallbackQuery(query.id);
+
+  if (action === 'admin_dashboard') {
+    try {
+      const totalUsers = await User.countDocuments();
+      const activePlans = await User.countDocuments({ 'activePlan.planId': { $exists: true } });
+      const pendingDeposits = await Transaction.countDocuments({ type: 'deposit', status: 'pending' });
+      const pendingWithdrawals = await Transaction.countDocuments({ type: 'withdraw', status: 'pending' });
+      
+      const totalDeposits = await Transaction.aggregate([
+        { $match: { type: 'deposit', status: 'approved' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
+
+      const totalWithdrawals = await Transaction.aggregate([
+        { $match: { type: 'withdraw', status: 'approved' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
+
+      const stats = `📊 *Dashboard Statistics*\n\n` +
+        `👤 Total Users: ${totalUsers}\n` +
+        `✅ Active Plans: ${activePlans}\n` +
+        `💰 Pending Deposits: ${pendingDeposits}\n` +
+        `💸 Pending Withdrawals: ${pendingWithdrawals}\n` +
+        `🏦 Total Deposits: PKR ${totalDeposits[0]?.total || 0}\n` +
+        `💵 Total Withdrawals: PKR ${totalWithdrawals[0]?.total || 0}`;
+
+      bot.sendMessage(chatId, stats, { parse_mode: 'Markdown' });
+    } catch (err) {
+      bot.sendMessage(chatId, '❌ Error loading stats');
+    }
+  }
+
+  if (action === 'admin_users') {
+    try {
+      const users = await User.find().limit(20);
+      let message = '👥 *All Users*\n\n';
+      users.forEach((u, i) => {
+        message += `${i + 1}. ${u.username} | ${u.totalInvested} PKR | ${u.status}\n`;
+      });
+      message += `\nTotal: ${await User.countDocuments()} users`;
+      bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (err) {
+      bot.sendMessage(chatId, '❌ Error loading users');
+    }
+  }
+
+  if (action === 'admin_pending_deposits') {
+    try {
+      const deposits = await Transaction.find({ type: 'deposit', status: 'pending' }).limit(10);
+      if (deposits.length === 0) {
+        bot.sendMessage(chatId, '✅ No pending deposits');
+        return;
+      }
+
+      for (const dep of deposits) {
+        const keyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '✅ Approve', callback_data: `approve_dep_${dep._id}` },
+                { text: '❌ Reject', callback_data: `reject_dep_${dep._id}` }
+              ]
+            ]
+          }
+        };
+
+        const message = `💰 *Pending Deposit*\n\n` +
+          `👤 User: ${dep.username}\n` +
+          `💵 Amount: PKR ${dep.amount}\n` +
+          `🔢 TxID: ${dep.txId}\n` +
+          `🏦 Type: ${dep.accountType}\n` +
+          `📅 Date: ${new Date(dep.createdAt).toLocaleDateString()}`;
+
+        if (dep.screenshot) {
+          bot.sendPhoto(chatId, `${req.protocol}://${req.get('host')}/${dep.screenshot}`, {
+            caption: message,
+            parse_mode: 'Markdown',
+            ...keyboard
+          });
+        } else {
+          bot.sendMessage(chatId, message, { parse_mode: 'Markdown', ...keyboard });
+        }
+      }
+    } catch (err) {
+      bot.sendMessage(chatId, '❌ Error loading deposits');
+    }
+  }
+
+  if (action === 'admin_pending_withdrawals') {
+    try {
+      const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).limit(10);
+      if (withdrawals.length === 0) {
+        bot.sendMessage(chatId, '✅ No pending withdrawals');
+        return;
+      }
+
+      for (const wd of withdrawals) {
+        const keyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '✅ Approve', callback_data: `approve_wd_${wd._id}` },
+                { text: '❌ Reject', callback_data: `reject_wd_${wd._id}` }
+              ]
+            ]
+          }
+        };
+
+        const message = `💸 *Pending Withdrawal*\n\n` +
+          `👤 User: ${wd.username}\n` +
+          `💵 Amount: PKR ${wd.amount}\n` +
+          `🏦 Type: ${wd.accountType}\n` +
+          `🔢 Account: ${wd.accountNumber}\n` +
+          `📛 Title: ${wd.accountTitle}\n` +
+          `📅 Date: ${new Date(wd.createdAt).toLocaleDateString()}`;
+
+        bot.sendMessage(chatId, message, { parse_mode: 'Markdown', ...keyboard });
+      }
+    } catch (err) {
+      bot.sendMessage(chatId, '❌ Error loading withdrawals');
+    }
+  }
+
+  if (action === 'admin_plans') {
+    try {
+      const plans = await Plan.find().sort({ planId: 1 });
+      let message = '📋 *All Plans*\n\n';
+      plans.forEach(p => {
+        message += `Plan ${p.planId}: ${p.name}\n` +
+          `💰 Amount: PKR ${p.amount}\n` +
+          `📈 Daily: ${p.dailyProfit}% | 📅 ${p.duration} Days\n` +
+          `💎 Total Return: PKR ${(p.amount * p.dailyProfit / 100 * p.duration).toFixed(0)}\n\n`;
+      });
+      bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (err) {
+      bot.sendMessage(chatId, '❌ Error loading plans');
+    }
+  }
+
+  // Handle Approve/Reject Deposits
+  if (query.data.startsWith('approve_dep_') || query.data.startsWith('reject_dep_')) {
+    const parts = query.data.split('_');
+    const action = parts[0];
+    const tid = parts[2];
+    
+    try {
+      const transaction = await Transaction.findById(tid);
+      if (!transaction) {
+        bot.sendMessage(chatId, '❌ Transaction not found');
+        return;
+      }
+
+      transaction.status = action === 'approve' ? 'approved' : 'rejected';
+      await transaction.save();
+
+      if (action === 'approve') {
+        const user = await User.findOne({ username: transaction.username });
+        const plan = await Plan.findOne({ planId: transaction.planId });
+        
+        user.activePlan = {
+          planId: plan.planId,
+          name: plan.name,
+          amount: plan.amount,
+          dailyProfit: plan.amount * (plan.dailyProfit / 100),
+          startDate: new Date(),
+          endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
+          profitDays: 0
+        };
+        
+        user.totalInvested += plan.amount;
+        const firstDayProfit = plan.amount * (plan.dailyProfit / 100);
+        user.balance += firstDayProfit;
+        user.totalEarned += firstDayProfit;
+        user.activePlan.profitDays += 1;
+        await user.save();
+
+        await new Transaction({
+          userId: user._id,
+          username: user.username,
+          type: 'profit',
+          amount: firstDayProfit,
+          status: 'approved'
+        }).save();
+
+        // Referral Bonus
+        if (user.referredBy) {
+          const referrer = await User.findOne({ referralCode: user.referredBy });
+          if (referrer) {
+            const bonusPercent = await Setting.findOne({ key: 'referralBonus' });
+            const bonus = plan.amount * (bonusPercent?.value || 11) / 100;
+            referrer.balance += bonus;
+            referrer.referralEarnings += bonus;
+            await referrer.save();
+
+            await new Transaction({
+              userId: referrer._id,
+              username: referrer.username,
+              type: 'referral',
+              amount: bonus,
+              status: 'approved'
+            }).save();
+          }
+        }
+      }
+
+      bot.sendMessage(chatId, `✅ Deposit ${action === 'approve' ? 'Approved' : 'Rejected'}!\nUser: ${transaction.username}\nAmount: PKR ${transaction.amount}`);
+    } catch (err) {
+      bot.sendMessage(chatId, `❌ Error: ${err.message}`);
+    }
+  }
+
+  // Handle Approve/Reject Withdrawals
+  if (query.data.startsWith('approve_wd_') || query.data.startsWith('reject_wd_')) {
+    const parts = query.data.split('_');
+    const action = parts[0];
+    const tid = parts[2];
+    
+    try {
+      const transaction = await Transaction.findById(tid);
+      if (!transaction) {
+        bot.sendMessage(chatId, '❌ Transaction not found');
+        return;
+      }
+
+      transaction.status = action === 'approve' ? 'approved' : 'rejected';
+      await transaction.save();
+
+      if (action === 'approve') {
+        const user = await User.findOne({ username: transaction.username });
+        user.balance -= transaction.amount;
+        await user.save();
+      }
+
+      bot.sendMessage(chatId, `✅ Withdrawal ${action === 'approve' ? 'Approved' : 'Rejected'}!\nUser: ${transaction.username}\nAmount: PKR ${transaction.amount}`);
+    } catch (err) {
+      bot.sendMessage(chatId, `❌ Error: ${err.message}`);
+    }
   }
 });
-const upload = multer({ storage });
 
-// MongoDB Schemas
+// ============ MIDDLEWARE ============
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// ============ MONGODB SCHEMAS ============
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   whatsapp: { type: String, required: true },
@@ -35,6 +311,7 @@ const userSchema = new mongoose.Schema({
   referredBy: { type: String },
   activePlan: {
     planId: Number,
+    name: String,
     amount: Number,
     dailyProfit: Number,
     startDate: Date,
@@ -82,18 +359,17 @@ const faqSchema = new mongoose.Schema({
   order: Number
 });
 
-// Models
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const Plan = mongoose.model('Plan', planSchema);
 const Setting = mongoose.model('Setting', settingSchema);
 const FAQ = mongoose.model('FAQ', faqSchema);
 
-// Initialize default data
-async function initializeData() {
+// ============ INIT DEFAULT DATA ============
+async function initData() {
   const planCount = await Plan.countDocuments();
   if (planCount === 0) {
-    const plans = [
+    await Plan.insertMany([
       { planId: 1, name: 'Starter', amount: 360 },
       { planId: 2, name: 'Silver', amount: 860 },
       { planId: 3, name: 'Gold', amount: 1460 },
@@ -105,62 +381,47 @@ async function initializeData() {
       { planId: 9, name: 'Titanium', amount: 21060 },
       { planId: 10, name: 'Master', amount: 30000 },
       { planId: 11, name: 'Custom', amount: 50000 }
-    ];
-    await Plan.insertMany(plans);
+    ]);
   }
 
   const settingsCount = await Setting.countDocuments();
   if (settingsCount === 0) {
-    const settings = [
+    await Setting.insertMany([
       { key: 'referralBonus', value: 11 },
       { key: 'minWithdraw', value: 30 },
       { key: 'maxWithdraw', value: 500000 },
       { key: 'maxDailyWithdraw', value: 100000 },
       { key: 'easypaisaNumber', value: '03001234567' },
-      { key: 'easypaisaTitle', value: 'Investment Platform' },
+      { key: 'easypaisaTitle', value: 'Muhammad Ali' },
       { key: 'jazzcashNumber', value: '03009876543' },
-      { key: 'jazzcashTitle', value: 'Investment Platform' }
-    ];
-    await Setting.insertMany(settings);
+      { key: 'jazzcashTitle', value: 'Muhammad Ali' }
+    ]);
+  }
+
+  const faqCount = await FAQ.countDocuments();
+  if (faqCount === 0) {
+    await FAQ.insertMany([
+      { question: 'How to invest?', answer: 'Select a plan, send payment, upload screenshot', order: 1 },
+      { question: 'When do I get profit?', answer: 'Daily at 12:00 AM automatically', order: 2 },
+      { question: 'Minimum withdrawal?', answer: 'PKR 30 minimum withdrawal', order: 3 }
+    ]);
   }
 }
 
-// Auth Middleware
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) return res.status(401).json({ error: 'No token' });
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-}
-
-// Telegram notification function
+// Telegram Notification Helper
 async function notifyAdmin(message) {
   try {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const adminId = process.env.TELEGRAM_ADMIN_ID;
-    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      chat_id: adminId,
-      text: message,
-      parse_mode: 'HTML'
-    });
+    await bot.sendMessage(ADMIN_ID, message, { parse_mode: 'HTML' });
   } catch (err) {
     console.error('Telegram notification error:', err.message);
   }
 }
 
-// ============ ROUTES ============
+// ============ API ROUTES ============
 
-// Signup
 app.post('/api/signup', async (req, res) => {
   try {
     const { username, whatsapp, password, referralCode } = req.body;
-    
     const existingUser = await User.findOne({ username });
     if (existingUser) return res.status(400).json({ error: 'Username already exists' });
 
@@ -177,27 +438,24 @@ app.post('/api/signup', async (req, res) => {
 
     await user.save();
 
-    // If referred, add referral record
     if (referralCode) {
       const referrer = await User.findOne({ referralCode });
       if (referrer) {
-        await notifyAdmin(`🔗 New referral: ${username} joined using ${referrer.username}'s link`);
+        await notifyAdmin(`🔗 <b>New Referral!</b>\n${username} joined using ${referrer.username}'s link`);
       }
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.json({ token, username: user.username, referralCode: newReferralCode });
+    res.json({ token, username, referralCode: newReferralCode });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Login
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
-    
     if (!user) return res.status(400).json({ error: 'User not found' });
     if (user.status === 'blocked') return res.status(403).json({ error: 'Account blocked' });
 
@@ -205,20 +463,26 @@ app.post('/api/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: 'Invalid password' });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.json({ token, username: user.username, balance: user.balance });
+    res.json({ token, username, balance: user.balance });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get Dashboard Data
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayProfit = await Transaction.aggregate([
+      { $match: { userId: req.userId, type: 'profit', createdAt: { $gte: today } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
     const referrals = await User.find({ referredBy: user.referralCode });
-    
+
     res.json({
       username: user.username,
       balance: user.balance,
@@ -227,14 +491,14 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       totalEarned: user.totalEarned,
       referralEarnings: user.referralEarnings,
       referralCount: referrals.length,
-      referralCode: user.referralCode
+      referralCode: user.referralCode,
+      todayProfit: todayProfit[0]?.total || 0
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get All Plans
 app.get('/api/plans', authMiddleware, async (req, res) => {
   try {
     const plans = await Plan.find().sort({ planId: 1 });
@@ -244,7 +508,6 @@ app.get('/api/plans', authMiddleware, async (req, res) => {
   }
 });
 
-// Get Deposit Account Details
 app.get('/api/deposit-accounts', authMiddleware, async (req, res) => {
   try {
     const easypaisaNumber = await Setting.findOne({ key: 'easypaisaNumber' });
@@ -253,67 +516,63 @@ app.get('/api/deposit-accounts', authMiddleware, async (req, res) => {
     const jazzcashTitle = await Setting.findOne({ key: 'jazzcashTitle' });
 
     res.json({
-      easypaisa: {
-        number: easypaisaNumber?.value,
-        title: easypaisaTitle?.value
-      },
-      jazzcash: {
-        number: jazzcashNumber?.value,
-        title: jazzcashTitle?.value
-      }
+      easypaisa: { number: easypaisaNumber?.value, title: easypaisaTitle?.value },
+      jazzcash: { number: jazzcashNumber?.value, title: jazzcashTitle?.value }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Submit Deposit
 app.post('/api/deposit', authMiddleware, upload.single('screenshot'), async (req, res) => {
   try {
     const { planId, accountType, txId } = req.body;
     const plan = await Plan.findOne({ planId: parseInt(planId) });
-    
     if (!plan) return res.status(400).json({ error: 'Invalid plan' });
 
+    const user = await User.findById(req.userId);
     const transaction = new Transaction({
       userId: req.userId,
-      username: (await User.findById(req.userId)).username,
+      username: user.username,
       type: 'deposit',
       amount: plan.amount,
       accountType,
-      screenshot: req.file?.path,
+      screenshot: req.file ? req.file.path : null,
       txId,
       planId: plan.planId
     });
 
     await transaction.save();
 
-    await notifyAdmin(`💰 New Deposit Pending\nUser: ${transaction.username}\nPlan: ${plan.name}\nAmount: PKR ${plan.amount}\nTxID: ${txId}`);
+    await notifyAdmin(
+      `💰 <b>New Deposit</b>\n\n` +
+      `👤 User: ${user.username}\n` +
+      `📋 Plan: ${plan.name}\n` +
+      `💵 Amount: PKR ${plan.amount}\n` +
+      `🔢 TxID: ${txId}\n` +
+      `📅 ${new Date().toLocaleString()}`
+    );
 
-    res.json({ message: 'Deposit submitted for approval', transactionId: transaction._id });
+    res.json({ message: 'Deposit submitted!', transactionId: transaction._id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Submit Withdrawal
 app.post('/api/withdraw', authMiddleware, async (req, res) => {
   try {
     const { accountType, accountNumber, accountTitle, amount } = req.body;
     const user = await User.findById(req.userId);
 
-    if (!user.activePlan) {
-      return res.status(400).json({ error: 'No active plan found. Please invest first.' });
-    }
+    if (!user.activePlan) return res.status(400).json({ error: 'No active plan! Invest first.' });
 
     const minWithdraw = await Setting.findOne({ key: 'minWithdraw' });
     const maxWithdraw = await Setting.findOne({ key: 'maxWithdraw' });
     const maxDaily = await Setting.findOne({ key: 'maxDailyWithdraw' });
 
-    if (amount < minWithdraw.value) return res.status(400).json({ error: `Minimum withdrawal is PKR ${minWithdraw.value}` });
-    if (amount > maxWithdraw.value) return res.status(400).json({ error: `Maximum withdrawal is PKR ${maxWithdraw.value}` });
+    if (amount < minWithdraw.value) return res.status(400).json({ error: `Min: PKR ${minWithdraw.value}` });
+    if (amount > maxWithdraw.value) return res.status(400).json({ error: `Max: PKR ${maxWithdraw.value}` });
 
-    // Check daily withdrawal limit
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dailyTotal = await Transaction.aggregate([
@@ -322,7 +581,7 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     ]);
 
     if (dailyTotal.length > 0 && (dailyTotal[0].total + amount) > maxDaily.value) {
-      return res.status(400).json({ error: 'Daily withdrawal limit exceeded' });
+      return res.status(400).json({ error: 'Daily limit exceeded' });
     }
 
     if (user.balance < amount) return res.status(400).json({ error: 'Insufficient balance' });
@@ -334,21 +593,27 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
       amount,
       accountType,
       accountNumber,
-      accountTitle,
-      status: 'pending'
+      accountTitle
     });
 
     await transaction.save();
 
-    await notifyAdmin(`💸 New Withdrawal Request\nUser: ${user.username}\nAmount: PKR ${amount}\nType: ${accountType}\nNumber: ${accountNumber}`);
+    await notifyAdmin(
+      `💸 <b>New Withdrawal</b>\n\n` +
+      `👤 User: ${user.username}\n` +
+      `💵 Amount: PKR ${amount}\n` +
+      `🏦 Type: ${accountType}\n` +
+      `🔢 Account: ${accountNumber}\n` +
+      `📛 Title: ${accountTitle}\n` +
+      `📅 ${new Date().toLocaleString()}`
+    );
 
-    res.json({ message: 'Withdrawal request submitted', transactionId: transaction._id });
+    res.json({ message: 'Withdrawal request submitted!' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get Transaction History
 app.get('/api/transactions', authMiddleware, async (req, res) => {
   try {
     const transactions = await Transaction.find({ userId: req.userId }).sort({ createdAt: -1 });
@@ -358,7 +623,6 @@ app.get('/api/transactions', authMiddleware, async (req, res) => {
   }
 });
 
-// Get Deposit History
 app.get('/api/deposits', authMiddleware, async (req, res) => {
   try {
     const deposits = await Transaction.find({ userId: req.userId, type: 'deposit' }).sort({ createdAt: -1 });
@@ -368,7 +632,6 @@ app.get('/api/deposits', authMiddleware, async (req, res) => {
   }
 });
 
-// Get Withdrawal History
 app.get('/api/withdrawals', authMiddleware, async (req, res) => {
   try {
     const withdrawals = await Transaction.find({ userId: req.userId, type: 'withdraw' }).sort({ createdAt: -1 });
@@ -378,38 +641,35 @@ app.get('/api/withdrawals', authMiddleware, async (req, res) => {
   }
 });
 
-// Get Team Members
 app.get('/api/team', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     const team = await User.find({ referredBy: user.referralCode });
-    
-    const teamData = team.map(member => ({
-      username: member.username,
-      totalInvested: member.totalInvested,
-      joinedAt: member.createdAt
-    }));
-
-    res.json({ teamCount: team.length, team: teamData });
+    res.json({
+      teamCount: team.length,
+      team: team.map(m => ({
+        username: m.username,
+        totalInvested: m.totalInvested,
+        totalEarned: m.totalEarned,
+        joinedAt: m.createdAt
+      }))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get Leaderboard
 app.get('/api/leaderboard', authMiddleware, async (req, res) => {
   try {
     const topInvestors = await User.find({ status: 'active' })
-      .sort({ totalInvested: -1 })
-      .limit(10)
+      .sort({ totalInvested: -1 }).limit(10)
       .select('username totalInvested');
 
     const topReferrers = await User.aggregate([
       { $match: { status: 'active' } },
-      { $lookup: { from: 'users', localField: 'referralCode', foreignField: 'referredBy', as: 'referrals' } },
-      { $project: { username: 1, referralCount: { $size: '$referrals' } } },
-      { $sort: { referralCount: -1 } },
-      { $limit: 10 }
+      { $lookup: { from: 'users', localField: 'referralCode', foreignField: 'referredBy', as: 'refs' } },
+      { $project: { username: 1, count: { $size: '$refs' } } },
+      { $sort: { count: -1 } }, { $limit: 10 }
     ]);
 
     res.json({ topInvestors, topReferrers });
@@ -418,7 +678,6 @@ app.get('/api/leaderboard', authMiddleware, async (req, res) => {
   }
 });
 
-// Get FAQs
 app.get('/api/faqs', async (req, res) => {
   try {
     const faqs = await FAQ.find().sort({ order: 1 });
@@ -428,181 +687,18 @@ app.get('/api/faqs', async (req, res) => {
   }
 });
 
-// Admin API: Get pending deposits
-app.get('/api/admin/pending-deposits', async (req, res) => {
-  try {
-    const deposits = await Transaction.find({ type: 'deposit', status: 'pending' });
-    res.json(deposits);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Approve/Reject deposit
-app.post('/api/admin/deposit-action', async (req, res) => {
-  try {
-    const { transactionId, action } = req.body;
-    const transaction = await Transaction.findById(transactionId);
-    
-    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
-
-    transaction.status = action;
-    await transaction.save();
-
-    if (action === 'approved') {
-      const user = await User.findOne({ username: transaction.username });
-      const plan = await Plan.findOne({ planId: transaction.planId });
-      
-      // Active plan setup
-      user.activePlan = {
-        planId: plan.planId,
-        amount: plan.amount,
-        dailyProfit: plan.amount * (plan.dailyProfit / 100),
-        startDate: new Date(),
-        endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
-        profitDays: 0
-      };
-      
-      user.totalInvested += plan.amount;
-      
-      // First day profit immediately
-      const firstDayProfit = plan.amount * (plan.dailyProfit / 100);
-      user.balance += firstDayProfit;
-      user.totalEarned += firstDayProfit;
-      user.activePlan.profitDays += 1;
-
-      await user.save();
-
-      // Profit transaction
-      await new Transaction({
-        userId: user._id,
-        username: user.username,
-        type: 'profit',
-        amount: firstDayProfit,
-        status: 'approved'
-      }).save();
-
-      // Referral bonus
-      if (user.referredBy) {
-        const referrer = await User.findOne({ referralCode: user.referredBy });
-        if (referrer) {
-          const bonusPercent = await Setting.findOne({ key: 'referralBonus' });
-          const bonus = plan.amount * (bonusPercent.value / 100);
-          
-          referrer.balance += bonus;
-          referrer.referralEarnings += bonus;
-          await referrer.save();
-
-          await new Transaction({
-            userId: referrer._id,
-            username: referrer.username,
-            type: 'referral',
-            amount: bonus,
-            status: 'approved'
-          }).save();
-
-          await notifyAdmin(`🎉 Referral Bonus: ${referrer.username} got PKR ${bonus} from ${user.username}'s deposit`);
-        }
-      }
-
-      await notifyAdmin(`✅ Deposit Approved\nUser: ${user.username}\nPlan: ${plan.name}\nAmount: PKR ${plan.amount}`);
-    } else {
-      await notifyAdmin(`❌ Deposit Rejected\nUser: ${transaction.username}\nTxID: ${transaction.txId}`);
-    }
-
-    res.json({ message: `Deposit ${action}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Get pending withdrawals
-app.get('/api/admin/pending-withdrawals', async (req, res) => {
-  try {
-    const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' });
-    res.json(withdrawals);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Approve/Reject withdrawal
-app.post('/api/admin/withdraw-action', async (req, res) => {
-  try {
-    const { transactionId, action } = req.body;
-    const transaction = await Transaction.findById(transactionId);
-    
-    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
-
-    transaction.status = action;
-    await transaction.save();
-
-    if (action === 'approved') {
-      const user = await User.findOne({ username: transaction.username });
-      user.balance -= transaction.amount;
-      await user.save();
-      await notifyAdmin(`✅ Withdrawal Approved\nUser: ${user.username}\nAmount: PKR ${transaction.amount}`);
-    } else {
-      await notifyAdmin(`❌ Withdrawal Rejected\nUser: ${transaction.username}\nAmount: PKR ${transaction.amount}`);
-    }
-
-    res.json({ message: `Withdrawal ${action}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Update Settings
-app.post('/api/admin/update-setting', async (req, res) => {
-  try {
-    const { key, value } = req.body;
-    await Setting.findOneAndUpdate({ key }, { value }, { upsert: true });
-    await notifyAdmin(`⚙️ Setting Updated: ${key} = ${value}`);
-    res.json({ message: 'Setting updated' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Block/Unblock User
-app.post('/api/admin/toggle-user', async (req, res) => {
-  try {
-    const { username, status } = req.body;
-    await User.findOneAndUpdate({ username }, { status });
-    await notifyAdmin(`👤 User ${username} has been ${status}`);
-    res.json({ message: `User ${status}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Admin API: Broadcast message
-app.post('/api/admin/broadcast', async (req, res) => {
-  try {
-    const { message } = req.body;
-    const users = await User.find({ status: 'active' });
-    
-    for (const user of users) {
-      // In production, you'd send WhatsApp messages here
-      console.log(`Broadcasting to ${user.username}: ${message}`);
-    }
-    
-    await notifyAdmin(`📢 Broadcast sent to ${users.length} users`);
-    res.json({ message: `Broadcast sent to ${users.length} users` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Daily profit distribution (runs at midnight)
+// ============ DAILY PROFIT CRON ============
 cron.schedule('0 0 * * *', async () => {
   console.log('Running daily profit distribution...');
   try {
-    const users = await User.find({ 'activePlan.endDate': { $gte: new Date() } });
-    
+    const users = await User.find({
+      'activePlan.endDate': { $gte: new Date() },
+      'activePlan.profitDays': { $lt: 60 }
+    });
+
     for (const user of users) {
       if (user.activePlan && user.activePlan.profitDays < 60) {
-        const profit = user.activePlan.amount * (11 / 100);
+        const profit = user.activePlan.dailyProfit;
         user.balance += profit;
         user.totalEarned += profit;
         user.activePlan.profitDays += 1;
@@ -615,20 +711,19 @@ cron.schedule('0 0 * * *', async () => {
           amount: profit,
           status: 'approved'
         }).save();
-
-        console.log(`Daily profit of PKR ${profit} added to ${user.username}`);
       }
     }
+    console.log(`Daily profit distributed to ${users.length} users`);
   } catch (err) {
     console.error('Profit distribution error:', err.message);
   }
 });
 
-// MongoDB Connection & Server Start
+// ============ SERVER START ============
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('MongoDB connected');
-    await initializeData();
+    await initData();
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => console.error('MongoDB error:', err));
