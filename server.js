@@ -255,7 +255,7 @@ if (bot) {
         const activePlan = user.activePlan?.planId ? `Plan ${user.activePlan.name} (Day ${user.activePlan.profitDays}/60)` : 'None';
         const status = user.status === 'active' ? '🟢 Active' : '🔴 Blocked';
 
-        const msg = `👤 *User: ${user.username}*\n\n` +
+        const usermsg = `👤 *User: ${user.username}*\n\n` +
           `📱 WhatsApp: ${user.whatsapp}\n` +
           `💰 Balance: PKR ${user.balance?.toFixed(2) || 0}\n` +
           `📊 Status: ${status}\n` +
