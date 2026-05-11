@@ -1,7 +1,7 @@
 {
-  "name": "profit24-platform",
+  "name": "profit24-investment-platform",
   "version": "8.0.0",
-  "description": "Profit 24 - Complete Investment Platform with Telegram Bot",
+  "description": "Profit 24 - Complete Investment Platform with Telegram Bot Admin",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
