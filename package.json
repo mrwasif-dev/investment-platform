@@ -1,23 +1,14 @@
 {
   "name": "profit24-platform",
-  "version": "5.0.0",
-  "description": "Profit 24 - Complete Investment Platform with Telegram Bot Admin",
+  "version": "8.0.0",
+  "description": "Profit 24 - Complete Investment Platform with Telegram Bot",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "engines": {
     "node": "18.x"
   },
-  "keywords": [
-    "investment",
-    "platform",
-    "telegram-bot",
-    "profit24"
-  ],
-  "author": "Profit24",
-  "license": "ISC",
   "dependencies": {
     "express": "4.18.2",
     "mongoose": "7.6.3",
