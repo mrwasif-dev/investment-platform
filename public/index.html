@@ -12,8 +12,9 @@
 <!-- ============================================================ -->
 <!-- AUTH SECTION -->
 <!-- ============================================================ -->
-<div id="authSection">
-    <div class="auth-card" id="loginCard">
+<div id="authSection" style="display:block;">
+    <!-- Login Card -->
+    <div class="auth-card" id="loginCard" style="display:block;">
         <div class="logo">💎 Profit 24</div>
         <div class="subtitle">Secure Investment Platform</div>
         <input type="text" class="inp" id="loginUser" placeholder="Username" autocomplete="off">
@@ -21,7 +22,9 @@
         <button class="btn" onclick="handleLogin()">🚀 Sign In</button>
         <p class="link" onclick="showSignupForm()">Create New Account →</p>
     </div>
-    <div class="auth-card hidden" id="signupCard">
+
+    <!-- Signup Card -->
+    <div class="auth-card" id="signupCard" style="display:none;">
         <div class="logo">✨ Join Now</div>
         <div class="subtitle">Start Earning Daily Profits</div>
         <input type="text" class="inp" id="signupUser" placeholder="Username" autocomplete="off">
@@ -34,43 +37,91 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- DASHBOARD -->
+<!-- DASHBOARD SECTION -->
 <!-- ============================================================ -->
-<div id="dashSection" class="container hidden">
+<div id="dashSection" class="container" style="display:none;">
+    <!-- Header Card -->
     <div class="glass header-card">
         <h2 id="dashUser">👋 Welcome</h2>
         <p style="color:rgba(255,255,255,0.5);font-size:13px;">PID: <span id="dashPID">---</span></p>
         <div class="balance">PKR <span id="dashBal">0.00</span></div>
+        
+        <!-- Stats Grid - 8 Boxes -->
         <div class="stats-grid">
-            <div class="stat-box"><div class="stat-value" id="sToday">0</div><div class="stat-label">Today's Profit</div></div>
-            <div class="stat-box"><div class="stat-value" id="sInv">0</div><div class="stat-label">Total Invested</div></div>
-            <div class="stat-box"><div class="stat-value" id="sEarn">0</div><div class="stat-label">Total Earned</div></div>
-            <div class="stat-box"><div class="stat-value" id="sRefs">0</div><div class="stat-label">Referrals</div></div>
-            <div class="stat-box"><div class="stat-value" id="sRefBonus">0</div><div class="stat-label">Ref Bonus</div></div>
-            <div class="stat-box"><div class="stat-value" id="sDepPen" style="color:#fbbf24;">0</div><div class="stat-label">Deposit Pending</div></div>
-            <div class="stat-box"><div class="stat-value" id="sWdPen" style="color:#f87171;">0</div><div class="stat-label">Withdraw Pending</div></div>
-            <div class="stat-box"><div class="stat-value" id="sWdTotal">0</div><div class="stat-label">Total Withdrawn</div></div>
+            <div class="stat-box">
+                <div class="stat-value" id="sToday">0</div>
+                <div class="stat-label">Today's Profit</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sInv">0</div>
+                <div class="stat-label">Total Invested</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sEarn">0</div>
+                <div class="stat-label">Total Earned</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sRefs">0</div>
+                <div class="stat-label">Referrals</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sRefBonus">0</div>
+                <div class="stat-label">Ref Bonus</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sDepPen" style="color:#fbbf24;">0</div>
+                <div class="stat-label">Deposit Pending</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sWdPen" style="color:#f87171;">0</div>
+                <div class="stat-label">Withdraw Pending</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="sWdTotal">0</div>
+                <div class="stat-label">Total Withdrawn</div>
+            </div>
         </div>
     </div>
 
+    <!-- Menu Grid - 9 Buttons -->
     <div class="menu-grid">
-        <div class="menu-card" onclick="openDeposit()"><span class="menu-icon">💰</span>Deposit</div>
-        <div class="menu-card" onclick="openWithdraw()"><span class="menu-icon">💸</span>Withdraw</div>
-        <div class="menu-card" onclick="checkMyPlan()"><span class="menu-icon">📋</span>My Plan</div>
-        <div class="menu-card" onclick="openHistory('deposits')"><span class="menu-icon">📥</span>Deposit History</div>
-        <div class="menu-card" onclick="openHistory('withdrawals')"><span class="menu-icon">📤</span>Withdraw History</div>
-        <div class="menu-card" onclick="openHistory('all')"><span class="menu-icon">📊</span>Transactions</div>
-        <div class="menu-card" onclick="openTeam()"><span class="menu-icon">👥</span>My Team</div>
-        <div class="menu-card" onclick="openTransfer()"><span class="menu-icon">🔄</span>Fund Transfer</div>
-        <div class="menu-card" onclick="openProfile()"><span class="menu-icon">👤</span>Profile</div>
+        <div class="menu-card" onclick="openDeposit()">
+            <span class="menu-icon">💰</span>Deposit
+        </div>
+        <div class="menu-card" onclick="openWithdraw()">
+            <span class="menu-icon">💸</span>Withdraw
+        </div>
+        <div class="menu-card" onclick="checkMyPlan()">
+            <span class="menu-icon">📋</span>My Plan
+        </div>
+        <div class="menu-card" onclick="openHistory('deposits')">
+            <span class="menu-icon">📥</span>Deposit History
+        </div>
+        <div class="menu-card" onclick="openHistory('withdrawals')">
+            <span class="menu-icon">📤</span>Withdraw History
+        </div>
+        <div class="menu-card" onclick="openHistory('all')">
+            <span class="menu-icon">📊</span>Transactions
+        </div>
+        <div class="menu-card" onclick="openTeam()">
+            <span class="menu-icon">👥</span>My Team
+        </div>
+        <div class="menu-card" onclick="openTransfer()">
+            <span class="menu-icon">🔄</span>Fund Transfer
+        </div>
+        <div class="menu-card" onclick="openProfile()">
+            <span class="menu-icon">👤</span>Profile
+        </div>
     </div>
 
+    <!-- Referral Box -->
     <div class="glass ref-box">
         <p>🔗 Your Referral Link:</p>
         <code id="refLink">Loading...</code>
         <button class="btn-sm" onclick="copyReferralLink()">📋 Copy Link</button>
     </div>
 
+    <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <button class="btn-o" onclick="openLeaderboard()">🏆 Leaderboard</button>
         <button class="btn-o" onclick="openFAQ()">❓ FAQ</button>
@@ -82,7 +133,7 @@
 <!-- ============================================================ -->
 <!-- PLANS PAGE -->
 <!-- ============================================================ -->
-<div id="plansSection" class="container hidden">
+<div id="plansSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">📋 Select Investment Plan</h2>
     <div class="plans-grid" id="plansGrid"></div>
@@ -91,8 +142,8 @@
 <!-- ============================================================ -->
 <!-- PAYMENT METHOD PAGE -->
 <!-- ============================================================ -->
-<div id="paymentSection" class="container hidden">
-    <button class="back-btn" onclick="goToPlans()">← Back</button>
+<div id="paymentSection" class="container" style="display:none;">
+    <button class="back-btn" onclick="goToPlans()">← Back to Plans</button>
     <h2 class="page-title">🏦 Select Payment Method</h2>
     <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px;">
         Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong>
@@ -112,13 +163,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- DEPOSIT FORM -->
+<!-- DEPOSIT FORM PAGE -->
 <!-- ============================================================ -->
-<div id="depositSection" class="container hidden">
+<div id="depositSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToPayment()">← Back</button>
     <div class="glass form-card">
         <h2>💳 Complete Deposit</h2>
-        <p style="margin:10px 0;">Method: <strong id="depMethod"></strong></p>
+        <p style="margin:10px 0;">Payment Method: <strong id="depMethod"></strong></p>
         <div id="accInfo" style="margin:15px 0;"></div>
         <input type="file" class="inp" id="depSS" accept="image/*">
         <input type="text" class="inp" id="depTx" placeholder="Transaction ID">
@@ -129,7 +180,7 @@
 <!-- ============================================================ -->
 <!-- WITHDRAW PAGE -->
 <!-- ============================================================ -->
-<div id="withdrawSection" class="container hidden">
+<div id="withdrawSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card">
         <h2>💸 Withdraw Funds</h2>
@@ -142,9 +193,9 @@
             <option value="easypaisa">Easypaisa</option>
             <option value="jazzcash">JazzCash</option>
         </select>
-        <input type="text" class="inp" id="wdNum" placeholder="Account Number">
-        <input type="text" class="inp" id="wdTitle" placeholder="Account Title">
-        <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min: 30)">
+        <input type="text" class="inp" id="wdNum" placeholder="Account Number" autocomplete="off">
+        <input type="text" class="inp" id="wdTitle" placeholder="Account Title" autocomplete="off">
+        <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min: PKR 30)" autocomplete="off">
         <button class="btn" onclick="submitWithdrawNow()">📤 Send Request</button>
     </div>
 </div>
@@ -152,7 +203,7 @@
 <!-- ============================================================ -->
 <!-- FUND TRANSFER PAGE -->
 <!-- ============================================================ -->
-<div id="transferSection" class="container hidden">
+<div id="transferSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card">
         <h2>🔄 Fund Transfer</h2>
@@ -160,8 +211,8 @@
             <span style="color:rgba(255,255,255,0.6);">Your Balance:</span>
             <span style="font-size:28px;font-weight:900;color:#fbbf24;display:block;" id="tfBalance">PKR 0.00</span>
         </div>
-        <input type="text" class="inp" id="tfPID" placeholder="Receiver's PID">
-        <input type="number" class="inp" id="tfAmt" placeholder="Amount">
+        <input type="text" class="inp" id="tfPID" placeholder="Receiver's PID" autocomplete="off">
+        <input type="number" class="inp" id="tfAmt" placeholder="Amount (PKR)" autocomplete="off">
         <button class="btn" onclick="verifyReceiverPID()">Next →</button>
         <div id="tfConfirm" class="hidden" style="margin-top:20px;"></div>
     </div>
@@ -170,40 +221,48 @@
 <!-- ============================================================ -->
 <!-- HISTORY PAGE -->
 <!-- ============================================================ -->
-<div id="historySection" class="container hidden">
+<div id="historySection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
-    <h2 class="page-title" id="historyTitle"></h2>
+    <h2 class="page-title" id="historyTitle">📊 History</h2>
     <div id="historyContent"></div>
 </div>
 
 <!-- ============================================================ -->
 <!-- PROFILE PAGE -->
 <!-- ============================================================ -->
-<div id="profileSection" class="container hidden">
+<div id="profileSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card" style="text-align:center;">
-        <h2>👤 Profile</h2>
-        <p style="color:rgba(255,255,255,0.6);margin:10px 0;">PID: <strong style="color:#a78bfa;" id="pfPID">---</strong></p>
-        <input type="text" class="inp" id="pfWA" placeholder="WhatsApp Number">
-        <input type="password" class="inp" id="pfPass" placeholder="New Password (leave blank to keep)">
+        <h2>👤 My Profile</h2>
+        <p style="color:rgba(255,255,255,0.6);margin:10px 0;">
+            Your PID: <strong style="color:#a78bfa;font-size:18px;" id="pfPID">---</strong>
+        </p>
+        <input type="text" class="inp" id="pfWA" placeholder="WhatsApp Number" autocomplete="off">
+        <input type="password" class="inp" id="pfPass" placeholder="New Password (leave blank to keep current)" autocomplete="off">
         <button class="btn" onclick="saveProfile()">💾 Save Changes</button>
     </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- LEADERBOARD -->
+<!-- LEADERBOARD PAGE -->
 <!-- ============================================================ -->
-<div id="leaderboardSection" class="container hidden">
+<div id="leaderboardSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">🏆 Leaderboard</h2>
-    <div class="glass form-card"><h3>👑 Top Investors</h3><div id="topInv"></div></div>
-    <div class="glass form-card" style="margin-top:15px;"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div>
+    <div class="glass form-card">
+        <h3>👑 Top Investors</h3>
+        <div id="topInv"></div>
+    </div>
+    <div class="glass form-card" style="margin-top:15px;">
+        <h3>🔗 Top Referrers</h3>
+        <div id="topRef"></div>
+    </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- FAQ -->
+<!-- FAQ PAGE -->
 <!-- ============================================================ -->
-<div id="faqSection" class="container hidden">
+<div id="faqSection" class="container" style="display:none;">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">❓ Frequently Asked Questions</h2>
     <div id="faqContent"></div>
@@ -220,17 +279,17 @@
             <a href="https://wa.me/258867532400" target="_blank" class="support-card">
                 <div class="support-icon">📞</div>
                 <div class="support-name">Contact Admin</div>
-                <div class="support-info">Chat on WhatsApp</div>
+                <div class="support-info">Chat directly on WhatsApp</div>
             </a>
             <a href="https://whatsapp.com/channel/0029VbCIujEHAdNb1hxO4t2E" target="_blank" class="support-card">
                 <div class="support-icon">📢</div>
                 <div class="support-name">Support Channel</div>
-                <div class="support-info">Join WhatsApp Channel</div>
+                <div class="support-info">Join our WhatsApp Channel</div>
             </a>
             <div class="support-card" onclick="openChatWidget()">
                 <div class="support-icon">💬</div>
                 <div class="support-name">Live Chat</div>
-                <div class="support-info">AI Assistant</div>
+                <div class="support-info">Chat with AI Assistant</div>
             </div>
         </div>
     </div>
@@ -252,14 +311,16 @@
         <button class="btn-sm" onclick="sendChatMessage()" style="flex-shrink:0;">Send</button>
     </div>
 </div>
+
 <!-- ============================================================ -->
 <!-- WHATSAPP FLOAT BUTTON -->
 <!-- ============================================================ -->
-<a href="https://wa.me/258867532400" class="wa-float" target="_blank">🥏</a>
+<a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
+
 <!-- ============================================================ -->
 <!-- TOAST NOTIFICATION -->
 <!-- ============================================================ -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" style="display:none;">Notification</div>
 
 <script src="js/app.js"></script>
 </body>
