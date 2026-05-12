@@ -1,0 +1,3044 @@
+// ============================================================
+// PROFIT 24 - COMPLETE BACKEND SERVER v8.0
+// Investment Platform with Telegram Bot Admin Panel
+// Features: User Auth, PID System, 11 Plans, Deposit/Withdraw,
+// Fund Transfer, Referral System, Daily Profit Cron,
+// Telegram Bot (All Buttons, No Commands), AI Chatbot
+// ============================================================
+
+require('dotenv').config();
+
+// ================================================================
+// IMPORT ALL DEPENDENCIES
+// ================================================================
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const cors = require('cors');
+const cron = require('node-cron');
+const TelegramBot = require('node-telegram-bot-api');
+const path = require('path');
+const fs = require('fs');
+
+// ================================================================
+// APP INITIALIZATION
+// ================================================================
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// ================================================================
+// CREATE REQUIRED DIRECTORIES
+// ================================================================
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads', { recursive: true });
+    console.log('Created uploads directory');
+}
+if (!fs.existsSync('public')) {
+    fs.mkdirSync('public', { recursive: true });
+    console.log('Created public directory');
+}
+if (!fs.existsSync('public/uploads')) {
+    fs.mkdirSync('public/uploads', { recursive: true });
+    console.log('Created public/uploads directory');
+}
+if (!fs.existsSync('public/css')) {
+    fs.mkdirSync('public/css', { recursive: true });
+    console.log('Created public/css directory');
+}
+if (!fs.existsSync('public/js')) {
+    fs.mkdirSync('public/js', { recursive: true });
+    console.log('Created public/js directory');
+}
+
+// ================================================================
+// MIDDLEWARE SETUP
+// ================================================================
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// ================================================================
+// MULTER CONFIGURATION FOR FILE UPLOADS
+// ================================================================
+
+// For deposit screenshots
+const depositStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueName = 'dep-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + '-' + file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+        cb(null, uniqueName);
+    }
+});
+const uploadDeposit = multer({
+    storage: depositStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
+
+// For profile pictures
+const profileStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/uploads/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueName = 'dp-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + '-' + file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+        cb(null, uniqueName);
+    }
+});
+const uploadProfile = multer({
+    storage: profileStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
+
+// ================================================================
+// MONGODB SCHEMAS DEFINITIONS
+// ================================================================
+
+// User Schema - Main user account
+const userSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        unique: true,
+        required: [true, 'Username is required'],
+        trim: true,
+        lowercase: true,
+        minlength: 3,
+        maxlength: 30
+    },
+    whatsapp: {
+        type: String,
+        required: [true, 'WhatsApp number is required'],
+        trim: true
+    },
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: 6
+    },
+    pid: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    profilePic: {
+        type: String,
+        default: null
+    },
+    balance: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    referralCode: {
+        type: String,
+        unique: true
+    },
+    referredBy: {
+        type: String,
+        default: null
+    },
+    activePlan: {
+        planId: { type: Number },
+        name: { type: String },
+        amount: { type: Number },
+        dailyProfit: { type: Number },
+        startDate: { type: Date },
+        endDate: { type: Date },
+        profitDays: { type: Number, default: 0 }
+    },
+    totalInvested: {
+        type: Number,
+        default: 0
+    },
+    totalEarned: {
+        type: Number,
+        default: 0
+    },
+    referralEarnings: {
+        type: Number,
+        default: 0
+    },
+    totalWithdrawn: {
+        type: Number,
+        default: 0
+    },
+    pendingWithdrawal: {
+        type: Boolean,
+        default: false
+    },
+    status: {
+        type: String,
+        enum: ['active', 'blocked'],
+        default: 'active'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Transaction Schema - All financial records
+const transactionSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    username: {
+        type: String,
+        required: true
+    },
+    type: {
+        type: String,
+        enum: ['deposit', 'withdraw', 'profit', 'referral', 'transfer_sent', 'transfer_received', 'refund'],
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'completed', 'refunded'],
+        default: 'pending'
+    },
+    accountType: {
+        type: String,
+        default: ''
+    },
+    accountNumber: {
+        type: String,
+        default: ''
+    },
+    accountTitle: {
+        type: String,
+        default: ''
+    },
+    screenshot: {
+        type: String,
+        default: null
+    },
+    txId: {
+        type: String,
+        default: ''
+    },
+    planId: {
+        type: Number,
+        default: null
+    },
+    planName: {
+        type: String,
+        default: ''
+    },
+    relatedUserId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    relatedUsername: {
+        type: String,
+        default: ''
+    },
+    fee: {
+        type: Number,
+        default: 0
+    },
+    refundAt: {
+        type: Date,
+        default: null
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    processedAt: {
+        type: Date,
+        default: null
+    }
+});
+
+// Plan Schema - Investment plans
+const planSchema = new mongoose.Schema({
+    planId: {
+        type: Number,
+        unique: true,
+        required: true
+    },
+    name: {
+        type: String,
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    dailyProfit: {
+        type: Number,
+        default: 11,
+        min: 0,
+        max: 100
+    },
+    duration: {
+        type: Number,
+        default: 60,
+        min: 1
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
+});
+
+// Setting Schema - Platform configuration
+const settingSchema = new mongoose.Schema({
+    key: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    value: {
+        type: mongoose.Schema.Types.Mixed,
+        required: true
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// FAQ Schema - Frequently Asked Questions
+const faqSchema = new mongoose.Schema({
+    question: {
+        type: String,
+        required: true
+    },
+    answer: {
+        type: String,
+        required: true
+    },
+    order: {
+        type: Number,
+        default: 0
+    }
+});
+
+// ================================================================
+// CREATE MONGODB MODELS
+// ================================================================
+const User = mongoose.model('User', userSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
+const Plan = mongoose.model('Plan', planSchema);
+const Setting = mongoose.model('Setting', settingSchema);
+const FAQ = mongoose.model('FAQ', faqSchema);
+
+// ================================================================
+// PID (PROFIT ID) GENERATOR FUNCTION
+// Generates unique 5-digit PID from WhatsApp number
+// ================================================================
+function generatePID(whatsapp) {
+    var cleaned = whatsapp.replace(/[\s\-\+\(\)]/g, '');
+    if (cleaned.length >= 5) {
+        return cleaned.slice(-5);
+    }
+    return cleaned.padStart(5, '0');
+}
+
+// ================================================================
+// TELEGRAM BOT - FULL ADMIN PANEL (BUTTONS ONLY, NO COMMANDS)
+// ================================================================
+var bot = null;
+var botSessions = {};
+
+function initTelegramBot() {
+    var botToken = process.env.TELEGRAM_BOT_TOKEN;
+    var adminId = process.env.TELEGRAM_ADMIN_ID;
+
+    if (!botToken || !adminId) {
+        console.log('⚠️ Telegram Bot: Not configured. Skipping...');
+        return;
+    }
+
+    try {
+        bot = new TelegramBot(botToken, { polling: true });
+        console.log('✅ Telegram Bot: Connected successfully!');
+    } catch (error) {
+        console.error('❌ Telegram Bot: Connection failed -', error.message);
+        return;
+    }
+
+    // ============================================================
+    // ADMIN MAIN MENU KEYBOARD
+    // ============================================================
+    function getMainMenuKeyboard() {
+        return {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '📊 Dashboard', callback_data: 'admin_dashboard' }],
+                    [{ text: '👥 Users List', callback_data: 'admin_users' }],
+                    [{ text: '💰 Pending Deposits', callback_data: 'admin_deposits' }],
+                    [{ text: '💸 Pending Withdrawals', callback_data: 'admin_withdrawals' }],
+                    [{ text: '📋 Manage Plans', callback_data: 'admin_plans' }],
+                    [{ text: '🔄 Fund Transfer Settings', callback_data: 'admin_fundtransfer' }],
+                    [{ text: '🏦 Payment Accounts', callback_data: 'admin_accounts' }],
+                    [{ text: '⚙️ System Settings', callback_data: 'admin_settings' }],
+                    [{ text: '🔗 Referral Settings', callback_data: 'admin_referral' }],
+                    [{ text: '❓ FAQ Management', callback_data: 'admin_faq' }],
+                    [{ text: '📢 Broadcast Message', callback_data: 'admin_broadcast' }],
+                    [{ text: '🔍 Search User', callback_data: 'admin_search' }]
+                ]
+            }
+        };
+    }
+
+    function getBackKeyboard() {
+        return {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙 Back to Main Menu', callback_data: 'admin_dashboard' }]
+                ]
+            }
+        };
+    }
+
+    // ============================================================
+    // HANDLE /start AND /admin COMMANDS
+    // ============================================================
+    bot.onText(/\/start|\/admin/, function (msg) {
+        var chatId = msg.chat.id.toString();
+
+        if (chatId !== adminId) {
+            return bot.sendMessage(chatId, '⛔ Access Denied! You are not authorized.');
+        }
+
+        var welcomeMessage = '🔐 *ADMIN CONTROL PANEL*\n\n' +
+            'Welcome to the Profit 24 Admin Panel!\n\n' +
+            'All controls are available via the buttons below.\n' +
+            'No commands needed - just click!\n\n' +
+            'Select an option to continue:';
+
+        bot.sendMessage(adminId, welcomeMessage, {
+            parse_mode: 'Markdown',
+            ...getMainMenuKeyboard()
+        });
+    });
+
+    // ============================================================
+    // HANDLE ALL CALLBACK QUERIES (BUTTON CLICKS)
+    // ============================================================
+    bot.on('callback_query', async function (query) {
+        var chatId = query.message.chat.id.toString();
+
+        if (chatId !== adminId) {
+            return bot.answerCallbackQuery(query.id, { text: 'Unauthorized!' });
+        }
+
+        var action = query.data;
+        await bot.answerCallbackQuery(query.id);
+
+        try {
+            // ========================================================
+            // DASHBOARD - Show all platform statistics
+            // ========================================================
+            if (action === 'admin_dashboard') {
+                var totalUsers = await User.countDocuments();
+                var activePlans = await User.countDocuments({
+                    'activePlan.planId': { $exists: true },
+                    status: 'active'
+                });
+                var blockedUsers = await User.countDocuments({ status: 'blocked' });
+                var pendingDeposits = await Transaction.countDocuments({
+                    type: 'deposit',
+                    status: 'pending'
+                });
+                var pendingWithdrawals = await Transaction.countDocuments({
+                    type: 'withdraw',
+                    status: 'pending'
+                });
+
+                var totalDepositsResult = await Transaction.aggregate([
+                    { $match: { type: 'deposit', status: 'approved' } },
+                    { $group: { _id: null, total: { $sum: '$amount' } } }
+                ]);
+
+                var totalWithdrawalsResult = await Transaction.aggregate([
+                    { $match: { type: 'withdraw', status: 'approved' } },
+                    { $group: { _id: null, total: { $sum: '$amount' } } }
+                ]);
+
+                var totalTransferResult = await Transaction.aggregate([
+                    { $match: { type: 'transfer_sent', status: 'completed' } },
+                    { $group: { _id: null, total: { $sum: '$amount' } } }
+                ]);
+
+                var today = new Date();
+                today.setHours(0, 0, 0, 0);
+                var todayProfitResult = await Transaction.aggregate([
+                    {
+                        $match: {
+                            type: 'profit',
+                            status: 'approved',
+                            createdAt: { $gte: today }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            total: { $sum: '$amount' },
+                            count: { $sum: 1 }
+                        }
+                    }
+                ]);
+
+                var depositEnabled = await Setting.findOne({ key: 'depositEnabled' });
+                var withdrawEnabled = await Setting.findOne({ key: 'withdrawEnabled' });
+                var transferEnabled = await Setting.findOne({ key: 'fundTransferEnabled' });
+                var transferFee = await Setting.findOne({ key: 'fundTransferFee' });
+
+                var dashboardMessage = '📊 *DASHBOARD STATISTICS*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    '👥 *Users*\n' +
+                    '   • Total Users: ' + totalUsers + '\n' +
+                    '   • Active Plans: ' + activePlans + '\n' +
+                    '   • Blocked Users: ' + blockedUsers + '\n\n' +
+                    '💰 *Finance*\n' +
+                    '   • Total Deposits: PKR ' + (totalDepositsResult[0]?.total || 0).toLocaleString() + '\n' +
+                    '   • Total Withdrawals: PKR ' + (totalWithdrawalsResult[0]?.total || 0).toLocaleString() + '\n' +
+                    '   • Total Transfers: PKR ' + (totalTransferResult[0]?.total || 0).toLocaleString() + '\n' +
+                    '   • Today\'s Profit: PKR ' + (todayProfitResult[0]?.total || 0).toLocaleString() + '\n' +
+                    '   • Profit Given: ' + (todayProfitResult[0]?.count || 0) + ' times\n\n' +
+                    '⏳ *Pending*\n' +
+                    '   • Deposits: ' + pendingDeposits + '\n' +
+                    '   • Withdrawals: ' + pendingWithdrawals + '\n\n' +
+                    '⚙️ *System Status*\n' +
+                    '   • Deposit: ' + (depositEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n' +
+                    '   • Withdraw: ' + (withdrawEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n' +
+                    '   • Transfer: ' + (transferEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n' +
+                    '   • Transfer Fee: ' + (transferFee?.value || 0) + '%\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n' +
+                    '📅 ' + new Date().toLocaleString();
+
+                await bot.editMessageText(dashboardMessage, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...getMainMenuKeyboard()
+                });
+            }
+
+            // ========================================================
+            // USERS LIST - View all registered users
+            // ========================================================
+            else if (action === 'admin_users') {
+                var users = await User.find()
+                    .sort({ createdAt: -1 })
+                    .limit(25)
+                    .lean();
+
+                var totalCount = await User.countDocuments();
+
+                var message = '👥 *ALL USERS* (' + totalCount + ' total)\n\n';
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+                users.forEach(function (user, index) {
+                    var statusIcon = user.status === 'blocked' ? '🔴' : (user.activePlan?.planId ? '🟢' : '🟡');
+                    message += (index + 1) + '. ' + statusIcon + ' *' + user.username + '*\n';
+                    message += '   🆔 PID: ' + user.pid + '\n';
+                    message += '   💰 Balance: PKR ' + (user.balance || 0).toFixed(2) + '\n';
+                    message += '   💵 Invested: PKR ' + (user.totalInvested || 0).toLocaleString() + '\n\n';
+                });
+
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                message += '🔍 Use the Search button to find a specific user by username or PID.';
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...getMainMenuKeyboard()
+                });
+            }
+
+            // ========================================================
+            // PENDING DEPOSITS - Show and process pending deposits
+            // ========================================================
+            else if (action === 'admin_deposits') {
+                await handlePendingTransactions('deposit', chatId, query.message.message_id);
+            }
+
+            // ========================================================
+            // PENDING WITHDRAWALS - Show and process pending withdrawals
+            // ========================================================
+            else if (action === 'admin_withdrawals') {
+                await handlePendingTransactions('withdraw', chatId, query.message.message_id);
+            }
+
+            // ========================================================
+            // MANAGE PLANS - View, Add, Delete, Toggle plans
+            // ========================================================
+            else if (action === 'admin_plans') {
+                var plans = await Plan.find().sort({ planId: 1 }).lean();
+
+                var message = '📋 *INVESTMENT PLANS*\n\n';
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+                plans.forEach(function (plan) {
+                    var statusIcon = plan.isActive ? '✅' : '❌';
+                    var totalReturn = plan.amount * (plan.dailyProfit / 100) * plan.duration;
+
+                    message += statusIcon + ' *Plan ' + plan.planId + ': ' + plan.name + '*\n';
+                    message += '   💰 Amount: PKR ' + plan.amount.toLocaleString() + '\n';
+                    message += '   📈 Daily Profit: ' + plan.dailyProfit + '%\n';
+                    message += '   📅 Duration: ' + plan.duration + ' Days\n';
+                    message += '   💎 Total Return: PKR ' + totalReturn.toLocaleString() + '\n\n';
+                });
+
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                message += 'Select an action:';
+
+                var planKeyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '➕ ADD NEW PLAN', callback_data: 'plan_add' }],
+                            [
+                                { text: '🗑️ DELETE PLAN', callback_data: 'plan_delete_select' },
+                                { text: '🔄 TOGGLE PLAN', callback_data: 'plan_toggle_select' }
+                            ],
+                            [{ text: '🔙 BACK TO MENU', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...planKeyboard
+                });
+            }
+
+            // ========================================================
+            // ADD PLAN - Prompt user to send plan details
+            // ========================================================
+            else if (action === 'plan_add') {
+                botSessions[chatId] = { step: 'adding_plan' };
+
+                var instructions = '➕ *ADD NEW INVESTMENT PLAN*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Please send the plan details in this format:\n\n' +
+                    '*Plan Name | Amount | Daily Profit % | Duration Days*\n\n' +
+                    'Example:\n' +
+                    '`Premium Plan | 10000 | 12 | 60`\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    '• Plan Name: Any name for the plan\n' +
+                    '• Amount: Investment amount in PKR\n' +
+                    '• Daily Profit %: Daily profit percentage\n' +
+                    '• Duration Days: Number of days\n\n' +
+                    'Send `/cancel` to abort.';
+
+                await bot.sendMessage(chatId, instructions, { parse_mode: 'Markdown' });
+            }
+
+            // ========================================================
+            // DELETE PLAN - Select which plan to delete
+            // ========================================================
+            else if (action === 'plan_delete_select') {
+                var plans = await Plan.find().sort({ planId: 1 }).lean();
+
+                var deleteButtons = plans.map(function (plan) {
+                    return [{
+                        text: '🗑️ Plan ' + plan.planId + ': ' + plan.name + ' (PKR ' + plan.amount.toLocaleString() + ')',
+                        callback_data: 'plan_delete_' + plan.planId
+                    }];
+                });
+
+                deleteButtons.push([{ text: '🔙 Back', callback_data: 'admin_plans' }]);
+
+                await bot.editMessageText('🗑️ *DELETE PLAN*\n\nSelect a plan to delete:', {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: deleteButtons }
+                });
+            }
+
+            // ========================================================
+            // TOGGLE PLAN - Select which plan to enable/disable
+            // ========================================================
+            else if (action === 'plan_toggle_select') {
+                var plans = await Plan.find().sort({ planId: 1 }).lean();
+
+                var toggleButtons = plans.map(function (plan) {
+                    return [{
+                        text: (plan.isActive ? '✅' : '❌') + ' Plan ' + plan.planId + ': ' + plan.name,
+                        callback_data: 'plan_toggle_' + plan.planId
+                    }];
+                });
+
+                toggleButtons.push([{ text: '🔙 Back', callback_data: 'admin_plans' }]);
+
+                await bot.editMessageText('🔄 *TOGGLE PLAN STATUS*\n\nSelect a plan to enable or disable:', {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: toggleButtons }
+                });
+            }
+
+            // ========================================================
+            // EXECUTE DELETE PLAN
+            // ========================================================
+            else if (action.startsWith('plan_delete_')) {
+                var planId = parseInt(action.replace('plan_delete_', ''));
+                var plan = await Plan.findOne({ planId: planId });
+
+                if (!plan) {
+                    await bot.sendMessage(chatId, '❌ Plan not found!');
+                    return;
+                }
+
+                await Plan.deleteOne({ planId: planId });
+
+                await bot.sendMessage(chatId,
+                    '✅ *Plan Deleted Successfully!*\n\n' +
+                    'Plan ID: ' + planId + '\n' +
+                    'Name: ' + plan.name + '\n' +
+                    'Amount: PKR ' + plan.amount.toLocaleString(),
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // EXECUTE TOGGLE PLAN
+            // ========================================================
+            else if (action.startsWith('plan_toggle_')) {
+                var planId = parseInt(action.replace('plan_toggle_', ''));
+                var plan = await Plan.findOne({ planId: planId });
+
+                if (!plan) {
+                    await bot.sendMessage(chatId, '❌ Plan not found!');
+                    return;
+                }
+
+                plan.isActive = !plan.isActive;
+                await plan.save();
+
+                var statusText = plan.isActive ? '✅ ACTIVE' : '❌ INACTIVE';
+
+                await bot.sendMessage(chatId,
+                    '✅ *Plan Status Updated!*\n\n' +
+                    'Plan ID: ' + planId + '\n' +
+                    'Name: ' + plan.name + '\n' +
+                    'Status: ' + statusText,
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // FUND TRANSFER SETTINGS
+            // ========================================================
+            else if (action === 'admin_fundtransfer') {
+                var transferEnabled = await Setting.findOne({ key: 'fundTransferEnabled' });
+                var transferFee = await Setting.findOne({ key: 'fundTransferFee' });
+
+                var message = '🔄 *FUND TRANSFER SETTINGS*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Status: ' + (transferEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n' +
+                    'Fee: ' + (transferFee?.value || 0) + '%\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Select an action:';
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{
+                                text: (transferEnabled?.value !== false ? '❌ Disable Transfer' : '✅ Enable Transfer'),
+                                callback_data: 'ft_toggle'
+                            }],
+                            [{ text: '💰 Set Fee Percentage', callback_data: 'ft_setfee' }],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...keyboard
+                });
+            }
+
+            // ========================================================
+            // TOGGLE FUND TRANSFER ENABLE/DISABLE
+            // ========================================================
+            else if (action === 'ft_toggle') {
+                var current = await Setting.findOne({ key: 'fundTransferEnabled' });
+                var newValue = current?.value !== false ? false : true;
+
+                await Setting.findOneAndUpdate(
+                    { key: 'fundTransferEnabled' },
+                    { value: newValue, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                await bot.sendMessage(chatId,
+                    '✅ Fund Transfer is now *' + (newValue ? 'ENABLED' : 'DISABLED') + '*',
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // SET FUND TRANSFER FEE - Prompt for percentage
+            // ========================================================
+            else if (action === 'ft_setfee') {
+                botSessions[chatId] = { step: 'setting_transfer_fee' };
+
+                await bot.sendMessage(chatId,
+                    '💰 *SET TRANSFER FEE*\n\n' +
+                    'Send the fee percentage (0-100):\n\n' +
+                    'Example: `2` for 2% fee\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            // ========================================================
+            // PAYMENT ACCOUNTS - View and update Easypaisa/JazzCash
+            // ========================================================
+            else if (action === 'admin_accounts') {
+                var easypaisaNumber = await Setting.findOne({ key: 'easypaisaNumber' });
+                var easypaisaTitle = await Setting.findOne({ key: 'easypaisaTitle' });
+                var jazzcashNumber = await Setting.findOne({ key: 'jazzcashNumber' });
+                var jazzcashTitle = await Setting.findOne({ key: 'jazzcashTitle' });
+
+                var message = '🏦 *PAYMENT ACCOUNTS*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    '*Easypaisa Account:*\n' +
+                    '📱 Number: `' + (easypaisaNumber?.value || 'Not Set') + '`\n' +
+                    '📛 Title: ' + (easypaisaTitle?.value || 'Not Set') + '\n\n' +
+                    '*JazzCash Account:*\n' +
+                    '📱 Number: `' + (jazzcashNumber?.value || 'Not Set') + '`\n' +
+                    '📛 Title: ' + (jazzcashTitle?.value || 'Not Set') + '\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Click a button below to update:';
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '📱 Update Easypaisa', callback_data: 'acc_setep' }],
+                            [{ text: '💼 Update JazzCash', callback_data: 'acc_setjc' }],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...keyboard
+                });
+            }
+
+            // ========================================================
+            // UPDATE EASYPAISA - Prompt for details
+            // ========================================================
+            else if (action === 'acc_setep') {
+                botSessions[chatId] = { step: 'setting_easypaisa' };
+
+                await bot.sendMessage(chatId,
+                    '📱 *UPDATE EASYPAISA*\n\n' +
+                    'Send: Number | Title\n\n' +
+                    'Example:\n' +
+                    '`03001234567 | Muhammad Ali`\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            // ========================================================
+            // UPDATE JAZZCASH - Prompt for details
+            // ========================================================
+            else if (action === 'acc_setjc') {
+                botSessions[chatId] = { step: 'setting_jazzcash' };
+
+                await bot.sendMessage(chatId,
+                    '💼 *UPDATE JAZZCASH*\n\n' +
+                    'Send: Number | Title\n\n' +
+                    'Example:\n' +
+                    '`03009876543 | Muhammad Ali`\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            // ========================================================
+            // SYSTEM SETTINGS
+            // ========================================================
+            else if (action === 'admin_settings') {
+                var minWithdraw = await Setting.findOne({ key: 'minWithdraw' });
+                var maxWithdraw = await Setting.findOne({ key: 'maxWithdraw' });
+                var maxDaily = await Setting.findOne({ key: 'maxDailyWithdraw' });
+                var depositEnabled = await Setting.findOne({ key: 'depositEnabled' });
+                var withdrawEnabled = await Setting.findOne({ key: 'withdrawEnabled' });
+
+                var message = '⚙️ *SYSTEM SETTINGS*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    '*Withdrawal Limits:*\n' +
+                    '• Minimum: PKR ' + (minWithdraw?.value || 30).toLocaleString() + '\n' +
+                    '• Maximum: PKR ' + (maxWithdraw?.value || 500000).toLocaleString() + '\n' +
+                    '• Daily Limit: PKR ' + (maxDaily?.value || 100000).toLocaleString() + '\n\n' +
+                    '*System Status:*\n' +
+                    '• Deposits: ' + (depositEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n' +
+                    '• Withdrawals: ' + (withdrawEnabled?.value !== false ? '✅ Enabled' : '❌ Disabled') + '\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Select a setting to update:';
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: '📝 Set Min Withdrawal', callback_data: 'set_minwd' },
+                                { text: '📝 Set Max Withdrawal', callback_data: 'set_maxwd' }
+                            ],
+                            [{ text: '📝 Set Daily Limit', callback_data: 'set_dailywd' }],
+                            [
+                                {
+                                    text: (depositEnabled?.value !== false ? '❌ Disable Deposits' : '✅ Enable Deposits'),
+                                    callback_data: 'toggle_deposit'
+                                }
+                            ],
+                            [
+                                {
+                                    text: (withdrawEnabled?.value !== false ? '❌ Disable Withdrawals' : '✅ Enable Withdrawals'),
+                                    callback_data: 'toggle_withdraw'
+                                }
+                            ],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...keyboard
+                });
+            }
+
+            // ========================================================
+            // SET MIN WITHDRAWAL - Prompt for amount
+            // ========================================================
+            else if (action === 'set_minwd') {
+                botSessions[chatId] = { step: 'setting_minwd' };
+                await bot.sendMessage(chatId, '📝 Send the minimum withdrawal amount in PKR:\n\nSend `/cancel` to abort.');
+            }
+
+            else if (action === 'set_maxwd') {
+                botSessions[chatId] = { step: 'setting_maxwd' };
+                await bot.sendMessage(chatId, '📝 Send the maximum withdrawal amount in PKR:\n\nSend `/cancel` to abort.');
+            }
+
+            else if (action === 'set_dailywd') {
+                botSessions[chatId] = { step: 'setting_dailywd' };
+                await bot.sendMessage(chatId, '📝 Send the daily withdrawal limit in PKR:\n\nSend `/cancel` to abort.');
+            }
+
+            // ========================================================
+            // TOGGLE DEPOSIT ENABLE/DISABLE
+            // ========================================================
+            else if (action === 'toggle_deposit') {
+                var current = await Setting.findOne({ key: 'depositEnabled' });
+                var newValue = current?.value !== false ? false : true;
+
+                await Setting.findOneAndUpdate(
+                    { key: 'depositEnabled' },
+                    { value: newValue, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                await bot.sendMessage(chatId,
+                    '✅ Deposits are now *' + (newValue ? 'ENABLED' : 'DISABLED') + '*',
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // TOGGLE WITHDRAWAL ENABLE/DISABLE
+            // ========================================================
+            else if (action === 'toggle_withdraw') {
+                var current = await Setting.findOne({ key: 'withdrawEnabled' });
+                var newValue = current?.value !== false ? false : true;
+
+                await Setting.findOneAndUpdate(
+                    { key: 'withdrawEnabled' },
+                    { value: newValue, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                await bot.sendMessage(chatId,
+                    '✅ Withdrawals are now *' + (newValue ? 'ENABLED' : 'DISABLED') + '*',
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // REFERRAL SETTINGS
+            // ========================================================
+            else if (action === 'admin_referral') {
+                var referralBonus = await Setting.findOne({ key: 'referralBonus' });
+
+                var message = '🔗 *REFERRAL SETTINGS*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Current Referral Bonus: *' + (referralBonus?.value || 11) + '%*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    'Click below to change:';
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '📝 Change Bonus Percentage', callback_data: 'set_refbonus' }],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...keyboard
+                });
+            }
+
+            else if (action === 'set_refbonus') {
+                botSessions[chatId] = { step: 'setting_refbonus' };
+                await bot.sendMessage(chatId, '📝 Send the referral bonus percentage (0-100):\n\nSend `/cancel` to abort.');
+            }
+
+            // ========================================================
+            // FAQ MANAGEMENT
+            // ========================================================
+            else if (action === 'admin_faq') {
+                var faqs = await FAQ.find().sort({ order: 1 }).lean();
+
+                var message = '❓ *FAQ MANAGEMENT*\n\n';
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+                if (faqs.length === 0) {
+                    message += 'No FAQs available.\n\n';
+                } else {
+                    faqs.forEach(function (faq, index) {
+                        message += (index + 1) + '. *Q:* ' + faq.question + '\n';
+                        message += '   *A:* ' + faq.answer + '\n\n';
+                    });
+                }
+
+                message += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                message += 'Total FAQs: ' + faqs.length;
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '➕ Add New FAQ', callback_data: 'faq_add' }],
+                            [{ text: '🗑️ Delete All FAQs', callback_data: 'faq_clear' }],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                await bot.editMessageText(message, {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: 'Markdown',
+                    ...keyboard
+                });
+            }
+
+            else if (action === 'faq_add') {
+                botSessions[chatId] = { step: 'adding_faq' };
+
+                await bot.sendMessage(chatId,
+                    '❓ *ADD FAQ*\n\n' +
+                    'Send: Question | Answer\n\n' +
+                    'Example:\n' +
+                    '`How to invest? | Select a plan and make payment`\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            else if (action === 'faq_clear') {
+                await FAQ.deleteMany({});
+                await bot.sendMessage(chatId, '✅ All FAQs have been deleted!', getMainMenuKeyboard());
+            }
+
+            // ========================================================
+            // BROADCAST MESSAGE
+            // ========================================================
+            else if (action === 'admin_broadcast') {
+                botSessions[chatId] = { step: 'broadcasting' };
+
+                await bot.sendMessage(chatId,
+                    '📢 *BROADCAST MESSAGE*\n\n' +
+                    'Send the message you want to broadcast to all active users.\n\n' +
+                    'The message will be sent to all users with active status.\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            // ========================================================
+            // SEARCH USER
+            // ========================================================
+            else if (action === 'admin_search') {
+                botSessions[chatId] = { step: 'searching_user' };
+
+                await bot.sendMessage(chatId,
+                    '🔍 *SEARCH USER*\n\n' +
+                    'Send the username or PID of the user you want to find.\n\n' +
+                    'Send `/cancel` to abort.',
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            // ========================================================
+            // APPROVE DEPOSIT
+            // ========================================================
+            else if (action.startsWith('approve_deposit_')) {
+                var transactionId = action.replace('approve_deposit_', '');
+                await processDeposit(transactionId, 'approved', chatId);
+            }
+
+            // ========================================================
+            // REJECT DEPOSIT
+            // ========================================================
+            else if (action.startsWith('reject_deposit_')) {
+                var transactionId = action.replace('reject_deposit_', '');
+                await processDeposit(transactionId, 'rejected', chatId);
+            }
+
+            // ========================================================
+            // APPROVE WITHDRAWAL
+            // ========================================================
+            else if (action.startsWith('approve_withdrawal_')) {
+                var transactionId = action.replace('approve_withdrawal_', '');
+                await processWithdrawal(transactionId, 'approved', chatId);
+            }
+
+            // ========================================================
+            // REJECT WITHDRAWAL
+            // ========================================================
+            else if (action.startsWith('reject_withdrawal_')) {
+                var transactionId = action.replace('reject_withdrawal_', '');
+                await processWithdrawal(transactionId, 'rejected', chatId);
+            }
+
+            // ========================================================
+            // TOGGLE USER BLOCK/UNBLOCK
+            // ========================================================
+            else if (action.startsWith('user_toggle_')) {
+                var username = action.replace('user_toggle_', '');
+                var user = await User.findOne({ username: username });
+
+                if (!user) {
+                    await bot.sendMessage(chatId, '❌ User not found!');
+                    return;
+                }
+
+                user.status = user.status === 'active' ? 'blocked' : 'active';
+                await user.save();
+
+                var newStatus = user.status === 'active' ? '🟢 Active' : '🔴 Blocked';
+
+                await bot.sendMessage(chatId,
+                    '✅ *User Status Updated!*\n\n' +
+                    'Username: ' + user.username + '\n' +
+                    'Status: ' + newStatus,
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+        } catch (error) {
+            console.error('Bot callback error:', error.message);
+            await bot.sendMessage(chatId, '❌ Error: ' + error.message, getMainMenuKeyboard());
+        }
+    });
+
+    // ============================================================
+    // HANDLE TEXT MESSAGES FOR MULTI-STEP OPERATIONS
+    // ============================================================
+    bot.on('message', async function (msg) {
+        var chatId = msg.chat.id.toString();
+
+        if (chatId !== adminId || !msg.text) return;
+
+        var text = msg.text.trim();
+        var session = botSessions[chatId];
+
+        // Cancel any operation
+        if (text === '/cancel') {
+            if (session) {
+                delete botSessions[chatId];
+                await bot.sendMessage(chatId, '❌ Operation cancelled.', getMainMenuKeyboard());
+            }
+            return;
+        }
+
+        // Handle different session types
+        if (session) {
+            // ========================================================
+            // ADDING PLAN
+            // ========================================================
+            if (session.step === 'adding_plan') {
+                var parts = text.split('|').map(function (part) {
+                    return part.trim();
+                });
+
+                if (parts.length < 4) {
+                    return bot.sendMessage(chatId,
+                        '❌ Invalid format!\n\n' +
+                        'Please use: Name | Amount | Profit% | Days\n\n' +
+                        'Example: Premium | 5000 | 12 | 60'
+                    );
+                }
+
+                var planName = parts[0];
+                var planAmount = parseInt(parts[1]);
+                var planProfit = parseFloat(parts[2]);
+                var planDays = parseInt(parts[3]);
+
+                if (isNaN(planAmount) || isNaN(planProfit) || isNaN(planDays)) {
+                    return bot.sendMessage(chatId, '❌ Invalid numbers! Please check your input.');
+                }
+
+                var lastPlan = await Plan.findOne().sort({ planId: -1 });
+                var newPlanId = lastPlan ? lastPlan.planId + 1 : 1;
+
+                await new Plan({
+                    planId: newPlanId,
+                    name: planName,
+                    amount: planAmount,
+                    dailyProfit: planProfit,
+                    duration: planDays,
+                    isActive: true
+                }).save();
+
+                delete botSessions[chatId];
+
+                var totalReturn = planAmount * (planProfit / 100) * planDays;
+
+                return bot.sendMessage(chatId,
+                    '✅ *PLAN ADDED SUCCESSFULLY!*\n\n' +
+                    'Plan ID: ' + newPlanId + '\n' +
+                    'Name: ' + planName + '\n' +
+                    'Amount: PKR ' + planAmount.toLocaleString() + '\n' +
+                    'Daily Profit: ' + planProfit + '%\n' +
+                    'Duration: ' + planDays + ' Days\n' +
+                    'Total Return: PKR ' + totalReturn.toLocaleString(),
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // SETTING TRANSFER FEE
+            // ========================================================
+            else if (session.step === 'setting_transfer_fee') {
+                var feeValue = parseFloat(text);
+
+                if (isNaN(feeValue) || feeValue < 0 || feeValue > 100) {
+                    return bot.sendMessage(chatId, '❌ Invalid percentage! Please enter a number between 0 and 100.');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'fundTransferFee' },
+                    { value: feeValue, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ Transfer fee set to ' + feeValue + '%',
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // SETTING EASYPAISA
+            // ========================================================
+            else if (session.step === 'setting_easypaisa') {
+                var parts = text.split('|').map(function (part) {
+                    return part.trim();
+                });
+
+                if (parts.length < 2) {
+                    return bot.sendMessage(chatId, '❌ Format: Number | Title\nExample: 03001234567 | Ali');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'easypaisaNumber' },
+                    { value: parts[0], updatedAt: new Date() },
+                    { upsert: true }
+                );
+                await Setting.findOneAndUpdate(
+                    { key: 'easypaisaTitle' },
+                    { value: parts[1], updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ *Easypaisa Updated!*\n\nNumber: ' + parts[0] + '\nTitle: ' + parts[1],
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // SETTING JAZZCASH
+            // ========================================================
+            else if (session.step === 'setting_jazzcash') {
+                var parts = text.split('|').map(function (part) {
+                    return part.trim();
+                });
+
+                if (parts.length < 2) {
+                    return bot.sendMessage(chatId, '❌ Format: Number | Title\nExample: 03009876543 | Ali');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'jazzcashNumber' },
+                    { value: parts[0], updatedAt: new Date() },
+                    { upsert: true }
+                );
+                await Setting.findOneAndUpdate(
+                    { key: 'jazzcashTitle' },
+                    { value: parts[1], updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ *JazzCash Updated!*\n\nNumber: ' + parts[0] + '\nTitle: ' + parts[1],
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // SETTING MIN WITHDRAWAL
+            // ========================================================
+            else if (session.step === 'setting_minwd') {
+                var value = parseInt(text);
+
+                if (isNaN(value) || value < 0) {
+                    return bot.sendMessage(chatId, '❌ Invalid amount! Please enter a valid number.');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'minWithdraw' },
+                    { value: value, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ Minimum withdrawal set to PKR ' + value.toLocaleString(),
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // SETTING MAX WITHDRAWAL
+            // ========================================================
+            else if (session.step === 'setting_maxwd') {
+                var value = parseInt(text);
+
+                if (isNaN(value) || value < 0) {
+                    return bot.sendMessage(chatId, '❌ Invalid amount! Please enter a valid number.');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'maxWithdraw' },
+                    { value: value, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ Maximum withdrawal set to PKR ' + value.toLocaleString(),
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // SETTING DAILY WITHDRAWAL LIMIT
+            // ========================================================
+            else if (session.step === 'setting_dailywd') {
+                var value = parseInt(text);
+
+                if (isNaN(value) || value < 0) {
+                    return bot.sendMessage(chatId, '❌ Invalid amount! Please enter a valid number.');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'maxDailyWithdraw' },
+                    { value: value, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ Daily withdrawal limit set to PKR ' + value.toLocaleString(),
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // SETTING REFERRAL BONUS
+            // ========================================================
+            else if (session.step === 'setting_refbonus') {
+                var value = parseFloat(text);
+
+                if (isNaN(value) || value < 0 || value > 100) {
+                    return bot.sendMessage(chatId, '❌ Invalid percentage! Enter a number between 0 and 100.');
+                }
+
+                await Setting.findOneAndUpdate(
+                    { key: 'referralBonus' },
+                    { value: value, updatedAt: new Date() },
+                    { upsert: true }
+                );
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ Referral bonus set to ' + value + '%',
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // ADDING FAQ
+            // ========================================================
+            else if (session.step === 'adding_faq') {
+                var parts = text.split('|').map(function (part) {
+                    return part.trim();
+                });
+
+                if (parts.length < 2) {
+                    return bot.sendMessage(chatId, '❌ Format: Question | Answer');
+                }
+
+                var faqCount = await FAQ.countDocuments();
+
+                await new FAQ({
+                    question: parts[0],
+                    answer: parts[1],
+                    order: faqCount + 1
+                }).save();
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ FAQ added successfully!\n\nTotal FAQs: ' + (faqCount + 1),
+                    getMainMenuKeyboard()
+                );
+            }
+
+            // ========================================================
+            // BROADCASTING
+            // ========================================================
+            else if (session.step === 'broadcasting') {
+                var allUsers = await User.find({ status: 'active' }).lean();
+
+                var progressMsg = await bot.sendMessage(chatId,
+                    '📢 Broadcasting to ' + allUsers.length + ' users...\n\n⏳ Please wait...'
+                );
+
+                var successCount = 0;
+                var failCount = 0;
+
+                for (var i = 0; i < allUsers.length; i++) {
+                    try {
+                        await bot.sendMessage(allUsers[i]._id,
+                            '📢 *MESSAGE FROM ADMIN*\n\n' + text + '\n\n💎 Profit 24 Platform',
+                            { parse_mode: 'Markdown' }
+                        );
+                        successCount++;
+                    } catch (e) {
+                        failCount++;
+                    }
+                    // Small delay to avoid rate limiting
+                    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+                }
+
+                await bot.deleteMessage(chatId, progressMsg.message_id);
+
+                delete botSessions[chatId];
+
+                return bot.sendMessage(chatId,
+                    '✅ *BROADCAST COMPLETED!*\n\n' +
+                    'Total Users: ' + allUsers.length + '\n' +
+                    'Sent: ' + successCount + '\n' +
+                    'Failed: ' + failCount,
+                    { parse_mode: 'Markdown', ...getMainMenuKeyboard() }
+                );
+            }
+
+            // ========================================================
+            // SEARCHING USER
+            // ========================================================
+            else if (session.step === 'searching_user') {
+                var user = await User.findOne({
+                    $or: [
+                        { username: text },
+                        { pid: text }
+                    ]
+                }).lean();
+
+                if (!user) {
+                    delete botSessions[chatId];
+                    return bot.sendMessage(chatId,
+                        '❌ User not found with username or PID: ' + text,
+                        getMainMenuKeyboard()
+                    );
+                }
+
+                delete botSessions[chatId];
+
+                var planInfo = user.activePlan?.planId
+                    ? user.activePlan.name + ' (Day ' + user.activePlan.profitDays + '/60)'
+                    : 'None';
+
+                var refCount = await User.countDocuments({ referredBy: user.referralCode });
+
+                var userInfo = '👤 *USER INFORMATION*\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                    '📛 Username: ' + user.username + '\n' +
+                    '🆔 PID: ' + user.pid + '\n' +
+                    '📱 WhatsApp: ' + user.whatsapp + '\n' +
+                    '📊 Status: ' + (user.status === 'active' ? '🟢 Active' : '🔴 Blocked') + '\n\n' +
+                    '💰 Balance: PKR ' + (user.balance || 0).toFixed(2) + '\n' +
+                    '📋 Active Plan: ' + planInfo + '\n' +
+                    '💵 Total Invested: PKR ' + (user.totalInvested || 0).toLocaleString() + '\n' +
+                    '💎 Total Earned: PKR ' + (user.totalEarned || 0).toLocaleString() + '\n' +
+                    '💸 Total Withdrawn: PKR ' + (user.totalWithdrawn || 0).toLocaleString() + '\n' +
+                    '🎁 Referral Earnings: PKR ' + (user.referralEarnings || 0).toLocaleString() + '\n' +
+                    '🔗 Referrals: ' + refCount + '\n' +
+                    '📅 Joined: ' + new Date(user.createdAt).toLocaleDateString() + '\n\n' +
+                    '━━━━━━━━━━━━━━━━━━━━━━';
+
+                var keyboard = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{
+                                text: user.status === 'active' ? '🔴 BLOCK USER' : '🟢 UNBLOCK USER',
+                                callback_data: 'user_toggle_' + user.username
+                            }],
+                            [{ text: '🔙 Back to Menu', callback_data: 'admin_dashboard' }]
+                        ]
+                    }
+                };
+
+                return bot.sendMessage(chatId, userInfo, { parse_mode: 'Markdown', ...keyboard });
+            }
+        }
+    });
+}
+
+// ================================================================
+// HELPER: SHOW PENDING TRANSACTIONS
+// ================================================================
+async function handlePendingTransactions(type, chatId, messageId) {
+    var items = await Transaction.find({
+        type: type,
+        status: 'pending'
+    })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+
+    if (!items || items.length === 0) {
+        return bot.editMessageText(
+            '✅ No pending ' + type + 's at the moment.',
+            {
+                chat_id: chatId,
+                message_id: messageId,
+                reply_markup: {
+                    inline_keyboard: [[{ text: '🔙 Back', callback_data: 'admin_dashboard' }]]
+                }
+            }
+        );
+    }
+
+    await bot.deleteMessage(chatId, messageId);
+
+    for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var user = await User.findOne({ username: item.username }).lean();
+        var prefix = type === 'deposit' ? 'd' : 'w';
+        var message = '';
+
+        if (type === 'deposit') {
+            message = '💰 *PENDING DEPOSIT*\n\n' +
+                '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                '👤 User: ' + item.username + '\n' +
+                '🆔 PID: ' + (user?.pid || 'N/A') + '\n' +
+                '💵 Amount: PKR ' + item.amount.toLocaleString() + '\n' +
+                '📋 Plan: ' + (item.planName || 'Plan ' + item.planId) + '\n' +
+                '🏦 Method: ' + item.accountType.toUpperCase() + '\n' +
+                '🔢 TxID: ' + item.txId + '\n' +
+                '📅 Date: ' + new Date(item.createdAt).toLocaleString() + '\n\n' +
+                '━━━━━━━━━━━━━━━━━━━━━━';
+        } else {
+            message = '💸 *PENDING WITHDRAWAL*\n\n' +
+                '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                '👤 User: ' + item.username + '\n' +
+                '🆔 PID: ' + (user?.pid || 'N/A') + '\n' +
+                '💰 Balance: PKR ' + (user?.balance || 0).toFixed(2) + '\n' +
+                '💵 Amount: PKR ' + item.amount.toLocaleString() + '\n' +
+                '🏦 Method: ' + item.accountType.toUpperCase() + '\n' +
+                '🔢 Account: ' + item.accountNumber + '\n' +
+                '📛 Title: ' + item.accountTitle + '\n' +
+                '📅 Date: ' + new Date(item.createdAt).toLocaleString() + '\n\n' +
+                '━━━━━━━━━━━━━━━━━━━━━━';
+        }
+
+        var actionKeyboard = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: '✅ APPROVE',
+                            callback_data: 'approve_' + type + '_' + item._id
+                        },
+                        {
+                            text: '❌ REJECT',
+                            callback_data: 'reject_' + type + '_' + item._id
+                        }
+                    ]
+                ]
+            }
+        };
+
+        if (type === 'deposit' && item.screenshot && fs.existsSync(item.screenshot)) {
+            try {
+                await bot.sendPhoto(chatId, item.screenshot, {
+                    caption: message,
+                    parse_mode: 'Markdown',
+                    ...actionKeyboard
+                });
+            } catch (photoError) {
+                await bot.sendMessage(chatId, message + '\n\n⚠️ Screenshot not available', {
+                    parse_mode: 'Markdown',
+                    ...actionKeyboard
+                });
+            }
+        } else {
+            await bot.sendMessage(chatId, message, {
+                parse_mode: 'Markdown',
+                ...actionKeyboard
+            });
+        }
+    }
+}
+
+// ================================================================
+// HELPER: PROCESS DEPOSIT APPROVAL/REJECTION
+// ================================================================
+async function processDeposit(transactionId, status, chatId) {
+    var transaction = await Transaction.findById(transactionId);
+
+    if (!transaction) {
+        return bot.sendMessage(chatId, '❌ Transaction not found!');
+    }
+
+    if (transaction.status !== 'pending') {
+        return bot.sendMessage(chatId, '⚠️ This deposit was already ' + transaction.status + '!');
+    }
+
+    transaction.status = status;
+    transaction.processedAt = new Date();
+    await transaction.save();
+
+    if (status === 'approved') {
+        var user = await User.findOne({ username: transaction.username });
+        var plan = await Plan.findOne({ planId: transaction.planId });
+
+        if (user && plan) {
+            var dailyProfitAmount = plan.amount * (plan.dailyProfit / 100);
+
+            user.activePlan = {
+                planId: plan.planId,
+                name: plan.name,
+                amount: plan.amount,
+                dailyProfit: dailyProfitAmount,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
+                profitDays: 0
+            };
+
+            user.totalInvested += plan.amount;
+
+            var firstDayProfit = dailyProfitAmount;
+            user.balance += firstDayProfit;
+            user.totalEarned += firstDayProfit;
+            user.activePlan.profitDays += 1;
+
+            await user.save();
+
+            await new Transaction({
+                userId: user._id,
+                username: user.username,
+                type: 'profit',
+                amount: firstDayProfit,
+                status: 'approved'
+            }).save();
+
+            // Process referral bonus
+            if (user.referredBy) {
+                var referrer = await User.findOne({ referralCode: user.referredBy });
+
+                if (referrer) {
+                    var bonusSetting = await Setting.findOne({ key: 'referralBonus' });
+                    var bonusPercent = bonusSetting?.value || 11;
+                    var bonusAmount = plan.amount * (bonusPercent / 100);
+
+                    referrer.balance += bonusAmount;
+                    referrer.referralEarnings += bonusAmount;
+                    await referrer.save();
+
+                    await new Transaction({
+                        userId: referrer._id,
+                        username: referrer.username,
+                        type: 'referral',
+                        amount: bonusAmount,
+                        status: 'approved'
+                    }).save();
+
+                    await bot.sendMessage(chatId,
+                        '🎁 *Referral Bonus Given!*\n\n' +
+                        'From: ' + user.username + '\n' +
+                        'To: ' + referrer.username + '\n' +
+                        'Amount: PKR ' + bonusAmount.toLocaleString() + '\n' +
+                        'Bonus: ' + bonusPercent + '%',
+                        { parse_mode: 'Markdown' }
+                    );
+                }
+            }
+        }
+    }
+
+    await bot.sendMessage(chatId,
+        '✅ *DEPOSIT ' + status.toUpperCase() + '!*\n\n' +
+        'User: ' + transaction.username + '\n' +
+        'Amount: PKR ' + transaction.amount.toLocaleString() + '\n' +
+        'Method: ' + transaction.accountType,
+        { parse_mode: 'Markdown' }
+    );
+}
+
+// ================================================================
+// HELPER: PROCESS WITHDRAWAL APPROVAL/REJECTION
+// ================================================================
+async function processWithdrawal(transactionId, status, chatId) {
+    var transaction = await Transaction.findById(transactionId);
+
+    if (!transaction) {
+        return bot.sendMessage(chatId, '❌ Transaction not found!');
+    }
+
+    if (transaction.status !== 'pending') {
+        return bot.sendMessage(chatId, '⚠️ This withdrawal was already ' + transaction.status + '!');
+    }
+
+    transaction.status = status;
+    transaction.processedAt = new Date();
+    await transaction.save();
+
+    if (status === 'approved') {
+        var user = await User.findOne({ username: transaction.username });
+
+        if (user) {
+            user.totalWithdrawn += transaction.amount;
+            user.pendingWithdrawal = false;
+            await user.save();
+        }
+    }
+
+    if (status === 'rejected') {
+        var user = await User.findOne({ username: transaction.username });
+
+        if (user) {
+            transaction.refundAt = new Date(Date.now() + 3600000);
+            await transaction.save();
+
+            await bot.sendMessage(chatId,
+                'ℹ️ Amount will be refunded to ' + user.username + ' after 1 hour.'
+            );
+
+            // Schedule refund after 1 hour
+            setTimeout(async function () {
+                try {
+                    user.balance += transaction.amount;
+                    user.pendingWithdrawal = false;
+                    await user.save();
+
+                    transaction.status = 'refunded';
+                    await transaction.save();
+
+                    await new Transaction({
+                        userId: user._id,
+                        username: user.username,
+                        type: 'refund',
+                        amount: transaction.amount,
+                        status: 'completed'
+                    }).save();
+
+                    await bot.sendMessage(chatId,
+                        '✅ *REFUND COMPLETED!*\n\n' +
+                        'User: ' + user.username + '\n' +
+                        'Amount: PKR ' + transaction.amount.toLocaleString(),
+                        { parse_mode: 'Markdown' }
+                    );
+                } catch (error) {
+                    console.error('Refund error:', error.message);
+                }
+            }, 3600000);
+        }
+    }
+
+    await bot.sendMessage(chatId,
+        '✅ *WITHDRAWAL ' + status.toUpperCase() + '!*\n\n' +
+        'User: ' + transaction.username + '\n' +
+        'Amount: PKR ' + transaction.amount.toLocaleString() + '\n' +
+        'Method: ' + transaction.accountType,
+        { parse_mode: 'Markdown' }
+    );
+}
+
+// ================================================================
+// NOTIFICATION HELPER
+// ================================================================
+async function notifyAdmin(message) {
+    if (bot && process.env.TELEGRAM_ADMIN_ID) {
+        try {
+            await bot.sendMessage(process.env.TELEGRAM_ADMIN_ID, message, { parse_mode: 'HTML' });
+        } catch (error) {
+            console.error('Notification failed:', error.message);
+        }
+    }
+}
+
+// ================================================================
+// AUTHENTICATION MIDDLEWARE
+// ================================================================
+function authenticateRequest(req, res, next) {
+    var authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            success: false,
+            error: 'Authentication required. Please login.'
+        });
+    }
+
+    var token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+
+    try {
+        var decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.userId;
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            error: 'Invalid or expired token. Please login again.'
+        });
+    }
+}
+
+// ================================================================
+// API ROUTES
+// ================================================================
+
+// Health Check
+app.get('/api/health', function (req, res) {
+    res.json({
+        success: true,
+        message: 'Profit 24 API is running',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// User Registration
+app.post('/api/signup', async function (req, res) {
+    try {
+        var username = req.body.username;
+        var whatsapp = req.body.whatsapp;
+        var password = req.body.password;
+        var referralCode = req.body.referralCode;
+
+        if (!username || !whatsapp || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required: username, WhatsApp, password'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                error: 'Password must be at least 6 characters long'
+            });
+        }
+
+        var existingUser = await User.findOne({ username: username });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'Username already taken. Please choose another username.'
+            });
+        }
+
+        var pid = generatePID(whatsapp);
+        var pidExists = await User.findOne({ pid: pid });
+        if (pidExists) {
+            pid = pid + Math.floor(Math.random() * 9);
+        }
+
+        var hashedPassword = await bcrypt.hash(password, 10);
+
+        var newUser = new User({
+            username: username,
+            whatsapp: whatsapp,
+            password: hashedPassword,
+            pid: pid,
+            referralCode: pid,
+            referredBy: referralCode || null
+        });
+
+        await newUser.save();
+
+        var token = jwt.sign(
+            { userId: newUser._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        await notifyAdmin(
+            '🆕 <b>New User Registered!</b>\n\n' +
+            '👤 Username: ' + username + '\n' +
+            '🆔 PID: ' + pid + '\n' +
+            '📱 WhatsApp: ' + whatsapp + '\n' +
+            '📅 ' + new Date().toLocaleString()
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Account created successfully!',
+            token: token,
+            username: newUser.username,
+            pid: newUser.pid
+        });
+
+    } catch (error) {
+        console.error('Signup Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Registration failed. Please try again.'
+        });
+    }
+});
+
+// User Login
+app.post('/api/login', async function (req, res) {
+    try {
+        var username = req.body.username;
+        var password = req.body.password;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Username and password are required'
+            });
+        }
+
+        var user = await User.findOne({ username: username });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid username or password'
+            });
+        }
+
+        if (user.status === 'blocked') {
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been blocked. Contact support.'
+            });
+        }
+
+        var isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid username or password'
+            });
+        }
+
+        var token = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login successful!',
+            token: token,
+            username: user.username,
+            pid: user.pid,
+            balance: user.balance
+        });
+
+    } catch (error) {
+        console.error('Login Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Login failed. Please try again.'
+        });
+    }
+});
+
+// Get Dashboard Data
+app.get('/api/dashboard', authenticateRequest, async function (req, res) {
+    try {
+        var user = await User.findById(req.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        var todayProfitResult = await Transaction.aggregate([
+            {
+                $match: {
+                    userId: user._id,
+                    type: 'profit',
+                    status: 'approved',
+                    createdAt: { $gte: today }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: '$amount' }
+                }
+            }
+        ]);
+
+        var pendingDeposits = await Transaction.countDocuments({
+            userId: user._id,
+            type: 'deposit',
+            status: 'pending'
+        });
+
+        var pendingWithdrawals = await Transaction.countDocuments({
+            userId: user._id,
+            type: 'withdraw',
+            status: 'pending'
+        });
+
+        var referralCount = await User.countDocuments({
+            referredBy: user.referralCode
+        });
+
+        res.json({
+            success: true,
+            username: user.username,
+            pid: user.pid,
+            profilePic: user.profilePic,
+            balance: user.balance || 0,
+            activePlan: user.activePlan || null,
+            totalInvested: user.totalInvested || 0,
+            totalEarned: user.totalEarned || 0,
+            referralEarnings: user.referralEarnings || 0,
+            totalWithdrawn: user.totalWithdrawn || 0,
+            referralCount: referralCount,
+            referralCode: user.referralCode,
+            todayProfit: todayProfitResult[0]?.total || 0,
+            pendingDeposits: pendingDeposits,
+            pendingWithdrawals: pendingWithdrawals,
+            pendingWithdrawal: user.pendingWithdrawal
+        });
+
+    } catch (error) {
+        console.error('Dashboard Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load dashboard data'
+        });
+    }
+});
+
+// Get All Active Plans
+app.get('/api/plans', authenticateRequest, async function (req, res) {
+    try {
+        var plans = await Plan.find({ isActive: true })
+            .sort({ planId: 1 })
+            .lean();
+
+        res.json({
+            success: true,
+            plans: plans
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load plans'
+        });
+    }
+});
+
+// Get Deposit Account Details
+app.get('/api/deposit-accounts', authenticateRequest, async function (req, res) {
+    try {
+        var easypaisaNumber = await Setting.findOne({ key: 'easypaisaNumber' });
+        var easypaisaTitle = await Setting.findOne({ key: 'easypaisaTitle' });
+        var jazzcashNumber = await Setting.findOne({ key: 'jazzcashNumber' });
+        var jazzcashTitle = await Setting.findOne({ key: 'jazzcashTitle' });
+
+        res.json({
+            success: true,
+            easypaisa: {
+                number: easypaisaNumber?.value || 'Not configured',
+                title: easypaisaTitle?.value || 'Not configured'
+            },
+            jazzcash: {
+                number: jazzcashNumber?.value || 'Not configured',
+                title: jazzcashTitle?.value || 'Not configured'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load account details'
+        });
+    }
+});
+
+// Submit Deposit Request
+app.post('/api/deposit', authenticateRequest, uploadDeposit.single('screenshot'), async function (req, res) {
+    try {
+        var depositEnabled = await Setting.findOne({ key: 'depositEnabled' });
+        if (depositEnabled?.value === false) {
+            return res.status(400).json({
+                success: false,
+                error: 'Deposits are temporarily disabled. Please try again later.'
+            });
+        }
+
+        var planId = req.body.planId;
+        var accountType = req.body.accountType;
+        var txId = req.body.txId;
+
+        if (!planId || !accountType || !txId) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required: plan, account type, transaction ID'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'Payment screenshot is required'
+            });
+        }
+
+        var plan = await Plan.findOne({ planId: parseInt(planId) });
+
+        if (!plan) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid plan selected'
+            });
+        }
+
+        var user = await User.findById(req.userId);
+
+        if (user.activePlan?.planId) {
+            return res.status(400).json({
+                success: false,
+                error: 'You already have an active plan. Please wait for it to complete.'
+            });
+        }
+
+        var transaction = new Transaction({
+            userId: req.userId,
+            username: user.username,
+            type: 'deposit',
+            amount: plan.amount,
+            accountType: accountType,
+            screenshot: req.file.path,
+            txId: txId,
+            planId: plan.planId,
+            planName: plan.name,
+            status: 'pending'
+        });
+
+        await transaction.save();
+
+        await notifyAdmin(
+            '💰 <b>NEW DEPOSIT PENDING</b>\n\n' +
+            '👤 User: ' + user.username + '\n' +
+            '🆔 PID: ' + user.pid + '\n' +
+            '📋 Plan: ' + plan.name + '\n' +
+            '💵 Amount: PKR ' + plan.amount.toLocaleString() + '\n' +
+            '🏦 Method: ' + accountType.toUpperCase() + '\n' +
+            '🔢 TxID: ' + txId + '\n' +
+            '📅 ' + new Date().toLocaleString()
+        );
+
+        if (bot) {
+            try {
+                await bot.sendPhoto(process.env.TELEGRAM_ADMIN_ID, req.file.path, {
+                    caption: '📸 Payment proof from ' + user.username
+                });
+            } catch (e) {
+                console.error('Screenshot send failed:', e.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Deposit submitted successfully! Waiting for admin approval.',
+            transactionId: transaction._id
+        });
+
+    } catch (error) {
+        console.error('Deposit Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to submit deposit'
+        });
+    }
+});
+
+// Submit Withdrawal Request
+app.post('/api/withdraw', authenticateRequest, async function (req, res) {
+    try {
+        var withdrawEnabled = await Setting.findOne({ key: 'withdrawEnabled' });
+        if (withdrawEnabled?.value === false) {
+            return res.status(400).json({
+                success: false,
+                error: 'Withdrawals are temporarily disabled.'
+            });
+        }
+
+        var accountType = req.body.accountType;
+        var accountNumber = req.body.accountNumber;
+        var accountTitle = req.body.accountTitle;
+        var amount = parseFloat(req.body.amount);
+
+        if (!accountType || !accountNumber || !accountTitle || !amount) {
+            return res.status(400).json({
+                success: false,
+                error: 'All fields are required'
+            });
+        }
+
+        if (isNaN(amount) || amount <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid withdrawal amount'
+            });
+        }
+
+        var user = await User.findById(req.userId);
+
+        if (!user.activePlan || !user.activePlan.planId) {
+            return res.status(400).json({
+                success: false,
+                error: 'No active plan found. Please invest first.'
+            });
+        }
+
+        if (user.pendingWithdrawal) {
+            return res.status(400).json({
+                success: false,
+                error: 'You already have a pending withdrawal request. Please wait for it to be processed.'
+            });
+        }
+
+        var minWithdrawSetting = await Setting.findOne({ key: 'minWithdraw' });
+        var minWithdraw = minWithdrawSetting?.value || 30;
+
+        if (amount < minWithdraw) {
+            return res.status(400).json({
+                success: false,
+                error: 'Minimum withdrawal amount is PKR ' + minWithdraw.toLocaleString()
+            });
+        }
+
+        if (user.balance < amount) {
+            return res.status(400).json({
+                success: false,
+                error: 'Insufficient balance'
+            });
+        }
+
+        user.balance -= amount;
+        user.pendingWithdrawal = true;
+        await user.save();
+
+        var transaction = new Transaction({
+            userId: req.userId,
+            username: user.username,
+            type: 'withdraw',
+            amount: amount,
+            accountType: accountType,
+            accountNumber: accountNumber,
+            accountTitle: accountTitle,
+            status: 'pending'
+        });
+
+        await transaction.save();
+
+        await notifyAdmin(
+            '💸 <b>NEW WITHDRAWAL REQUEST</b>\n\n' +
+            '👤 User: ' + user.username + '\n' +
+            '🆔 PID: ' + user.pid + '\n' +
+            '💵 Amount: PKR ' + amount.toLocaleString() + '\n' +
+            '🏦 Method: ' + accountType.toUpperCase() + '\n' +
+            '🔢 Account: ' + accountNumber + '\n' +
+            '📛 Title: ' + accountTitle + '\n' +
+            '📅 ' + new Date().toLocaleString()
+        );
+
+        res.json({
+            success: true,
+            message: 'Withdrawal request submitted! Amount has been deducted from your balance.'
+        });
+
+    } catch (error) {
+        console.error('Withdrawal Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to submit withdrawal request'
+        });
+    }
+});
+
+// Fund Transfer
+app.post('/api/fund-transfer', authenticateRequest, async function (req, res) {
+    try {
+        var transferEnabled = await Setting.findOne({ key: 'fundTransferEnabled' });
+        if (transferEnabled?.value === false) {
+            return res.status(400).json({
+                success: false,
+                error: 'Fund Transfer is temporarily disabled.'
+            });
+        }
+
+        var receiverPid = req.body.receiverPid;
+        var amount = parseFloat(req.body.amount);
+
+        if (!receiverPid || !amount) {
+            return res.status(400).json({
+                success: false,
+                error: 'Receiver PID and Amount are required'
+            });
+        }
+
+        var sender = await User.findById(req.userId);
+
+        if (!sender.activePlan?.planId) {
+            return res.status(400).json({
+                success: false,
+                error: 'No active plan. Please invest first!'
+            });
+        }
+
+        var feeSetting = await Setting.findOne({ key: 'fundTransferFee' });
+        var feePercent = feeSetting?.value || 0;
+        var feeAmount = amount * (feePercent / 100);
+        var totalDeduction = amount + feeAmount;
+
+        if (sender.balance < totalDeduction) {
+            return res.status(400).json({
+                success: false,
+                error: 'Insufficient balance. Total with fee: PKR ' + totalDeduction.toFixed(2)
+            });
+        }
+
+        var receiver = await User.findOne({ pid: receiverPid });
+
+        if (!receiver) {
+            return res.status(400).json({
+                success: false,
+                error: 'Receiver PID not found'
+            });
+        }
+
+        if (receiver._id.toString() === sender._id.toString()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot transfer to yourself'
+            });
+        }
+
+        sender.balance -= totalDeduction;
+        receiver.balance += amount;
+
+        await sender.save();
+        await receiver.save();
+
+        await new Transaction({
+            userId: sender._id,
+            username: sender.username,
+            type: 'transfer_sent',
+            amount: amount,
+            fee: feeAmount,
+            status: 'completed',
+            relatedUserId: receiver._id,
+            relatedUsername: receiver.username
+        }).save();
+
+        await new Transaction({
+            userId: receiver._id,
+            username: receiver.username,
+            type: 'transfer_received',
+            amount: amount,
+            status: 'completed',
+            relatedUserId: sender._id,
+            relatedUsername: sender.username
+        }).save();
+
+        res.json({
+            success: true,
+            message: 'Transfer successful!',
+            senderBalance: sender.balance,
+            fee: feeAmount,
+            receiverUsername: receiver.username
+        });
+
+    } catch (error) {
+        console.error('Transfer Error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Transfer failed'
+        });
+    }
+});
+
+// Verify PID for Fund Transfer
+app.post('/api/verify-pid', authenticateRequest, async function (req, res) {
+    try {
+        var pid = req.body.pid;
+
+        var receiver = await User.findOne({ pid: pid })
+            .select('username whatsapp pid profilePic')
+            .lean();
+
+        if (!receiver) {
+            return res.status(404).json({
+                success: false,
+                error: 'No user found with this PID'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: receiver
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Verification failed'
+        });
+    }
+});
+
+// Get User Profile
+app.get('/api/profile', authenticateRequest, async function (req, res) {
+    try {
+        var user = await User.findById(req.userId)
+            .select('username whatsapp pid profilePic createdAt')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: user
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load profile'
+        });
+    }
+});
+
+// Update Profile
+app.put('/api/profile', authenticateRequest, uploadProfile.single('profilePic'), async function (req, res) {
+    try {
+        var user = await User.findById(req.userId);
+
+        if (req.body.whatsapp) {
+            user.whatsapp = req.body.whatsapp;
+            user.pid = generatePID(req.body.whatsapp);
+            user.referralCode = user.pid;
+        }
+
+        if (req.body.password) {
+            if (req.body.password.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Password must be at least 6 characters'
+                });
+            }
+            user.password = await bcrypt.hash(req.body.password, 10);
+        }
+
+        if (req.file) {
+            user.profilePic = '/uploads/' + req.file.filename;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            user: {
+                username: user.username,
+                pid: user.pid,
+                whatsapp: user.whatsapp,
+                profilePic: user.profilePic
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update profile'
+        });
+    }
+});
+
+// Get All Transactions
+app.get('/api/transactions', authenticateRequest, async function (req, res) {
+    try {
+        var transactions = await Transaction.find({ userId: req.userId })
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .lean();
+
+        res.json({
+            success: true,
+            transactions: transactions
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load transactions'
+        });
+    }
+});
+
+// Get Deposit History
+app.get('/api/deposits', authenticateRequest, async function (req, res) {
+    try {
+        var deposits = await Transaction.find({
+            userId: req.userId,
+            type: 'deposit'
+        })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        res.json({
+            success: true,
+            deposits: deposits
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load deposit history'
+        });
+    }
+});
+
+// Get Withdrawal History
+app.get('/api/withdrawals', authenticateRequest, async function (req, res) {
+    try {
+        var withdrawals = await Transaction.find({
+            userId: req.userId,
+            type: 'withdraw'
+        })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        res.json({
+            success: true,
+            withdrawals: withdrawals
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load withdrawal history'
+        });
+    }
+});
+
+// Get My Team
+app.get('/api/team', authenticateRequest, async function (req, res) {
+    try {
+        var user = await User.findById(req.userId);
+
+        var teamMembers = await User.find({ referredBy: user.referralCode })
+            .select('username pid totalInvested totalEarned createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.json({
+            success: true,
+            teamCount: teamMembers.length,
+            team: teamMembers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load team'
+        });
+    }
+});
+
+// Get Leaderboard
+app.get('/api/leaderboard', authenticateRequest, async function (req, res) {
+    try {
+        var topInvestors = await User.find({ status: 'active' })
+            .sort({ totalInvested: -1 })
+            .limit(10)
+            .select('username pid totalInvested')
+            .lean();
+
+        var topReferrers = await User.aggregate([
+            { $match: { status: 'active' } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'referralCode',
+                    foreignField: 'referredBy',
+                    as: 'refs'
+                }
+            },
+            {
+                $project: {
+                    username: 1,
+                    pid: 1,
+                    count: { $size: '$refs' }
+                }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+
+        res.json({
+            success: true,
+            topInvestors: topInvestors,
+            topReferrers: topReferrers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load leaderboard'
+        });
+    }
+});
+
+// Get FAQs
+app.get('/api/faqs', async function (req, res) {
+    try {
+        var faqs = await FAQ.find()
+            .sort({ order: 1 })
+            .lean();
+
+        res.json({
+            success: true,
+            faqs: faqs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load FAQs'
+        });
+    }
+});
+
+// Get Public Settings
+app.get('/api/settings', async function (req, res) {
+    try {
+        var settings = await Setting.find({}).lean();
+        var result = {};
+        settings.forEach(function (setting) {
+            result[setting.key] = setting.value;
+        });
+
+        res.json({
+            success: true,
+            settings: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load settings'
+        });
+    }
+});
+
+// AI Chatbot
+app.post('/api/chat', async function (req, res) {
+    try {
+        var message = (req.body.message || '').toLowerCase();
+        var reply = '';
+
+        if (message.includes('invest') || message.includes('deposit') || message.includes('plan') || message.includes('package')) {
+            reply = 'To invest in Profit 24:\n\n1. Go to the Deposit page\n2. Select an investment plan (PKR 360 to PKR 50,000+)\n3. Choose Easypaisa or JazzCash as payment method\n4. Send the exact plan amount to the provided account\n5. Upload payment screenshot with Transaction ID\n6. Submit for admin approval\n\nYou will receive your first profit immediately after approval!';
+        } else if (message.includes('profit') || message.includes('earning') || message.includes('return') || message.includes('daily')) {
+            reply = 'You earn 11% daily profit on your investment for 60 days.\n\nExample:\n- PKR 360 investment = PKR 39.60 daily × 60 days = PKR 2,376 total\n- PKR 5,000 investment = PKR 550 daily × 60 days = PKR 33,000 total\n- PKR 50,000 investment = PKR 5,500 daily × 60 days = PKR 330,000 total\n\nFirst profit is credited immediately after deposit approval.';
+        } else if (message.includes('withdraw') || message.includes('cash') || message.includes('withdrawal')) {
+            reply = 'To withdraw funds:\n\n1. Go to the Withdraw page\n2. Select Easypaisa or JazzCash\n3. Enter your account number and account title\n4. Enter the amount (Min: PKR 30)\n5. Amount will be deducted from balance immediately\n6. Admin will process your request\n\nNote: You can only have one pending withdrawal at a time.';
+        } else if (message.includes('refer') || message.includes('bonus') || message.includes('referral') || message.includes('invite')) {
+            reply = 'Referral System:\n\n- Share your PID code as referral link\n- When someone joins using your referral and makes a deposit\n- You earn 11% of their investment amount as bonus instantly!\n\nExample: If they invest PKR 10,000, you receive PKR 1,100 bonus.\n\nFind your PID and referral link on your Dashboard.';
+        } else if (message.includes('transfer') || message.includes('send fund') || message.includes('send money')) {
+            reply = 'Fund Transfer:\n\n1. Go to Fund Transfer page\n2. Enter the receiver\'s PID\n3. Enter the amount you want to transfer\n4. Click Next to verify the receiver\n5. Confirm the transfer\n\nTransfer is instant with no admin approval needed. You need an active plan to transfer funds.';
+        } else if (message.includes('balance') || message.includes('check') || message.includes('wallet')) {
+            reply = 'Your balance is displayed on the Dashboard. You can view:\n\n- Total Balance\n- Today\'s Profit\n- Total Invested\n- Total Earned\n- Referral Bonus\n- Pending Deposits\n- Pending Withdrawals\n- Total Withdrawn';
+        } else if (message.includes('limit') || message.includes('minimum') || message.includes('maximum')) {
+            reply = 'Withdrawal Limits:\n\n- Minimum: PKR 30 per request\n- Maximum: PKR 500,000 per request\n- Daily Limit: PKR 100,000\n\nFund Transfer: No limit\n\nAll limits can be adjusted by admin.';
+        } else if (message.includes('password') || message.includes('profile') || message.includes('update') || message.includes('change')) {
+            reply = 'Profile Management:\n\n- Go to the Profile page\n- Update your WhatsApp number\n- Change your password\n- View your PID\n\nYour PID is automatically generated from your WhatsApp number.';
+        } else if (message.includes('contact') || message.includes('support') || message.includes('help') || message.includes('admin')) {
+            reply = 'Support Options:\n\n1. Contact Admin: WhatsApp +258867532400\n2. Support Channel: Join our WhatsApp Channel\n3. Live Chat: AI assistant available on the website\n\nUse the Support button on your Dashboard.';
+        } else if (message.includes('hi') || message.includes('hello') || message.includes('hey') || message.includes('assalam')) {
+            reply = 'Hello! 👋 Welcome to Profit 24 Support.\n\nI can help you with:\n- Investment Plans\n- Deposit Process\n- Withdrawals\n- Profit Calculations\n- Referral System\n- Fund Transfer\n- Account Management\n\nWhat would you like to know?';
+        } else if (message.includes('thank') || message.includes('thanks') || message.includes('good')) {
+            reply = 'You\'re welcome! 😊\n\nIf you need any further assistance, feel free to ask. We\'re here to help you 24/7.\n\nHappy investing with Profit 24! 💎';
+        } else if (message.includes('plan list') || message.includes('all plans') || message.includes('packages')) {
+            reply = 'Available Investment Plans:\n\n1. Starter - PKR 360\n2. Silver - PKR 860\n3. Gold - PKR 1,460\n4. Platinum - PKR 2,660\n5. Diamond - PKR 4,260\n6. Ruby - PKR 6,060\n7. Emerald - PKR 9,060\n8. Sapphire - PKR 14,060\n9. Titanium - PKR 21,060\n10. Master - PKR 30,000\n11. Custom - PKR 50,000+\n\nAll plans: 11% daily profit for 60 days';
+        } else if (message.includes('pid') || message.includes('id') || message.includes('code')) {
+            reply = 'PID (Profit ID):\n\n- Your PID is a unique 5-digit identifier\n- It is generated from your WhatsApp number\n- Use it for fund transfers and referrals\n- Find your PID on the Dashboard or Profile page';
+        } else {
+            reply = 'I can answer questions about the Profit 24 platform only.\n\nTry asking about:\n• Investment Plans\n• How to Deposit\n• How to Withdraw\n• Profit Calculation\n• Referral System\n• Fund Transfer\n• Account Management\n• Platform Rules\n\nHow can I help you today?';
+        }
+
+        res.json({
+            success: true,
+            reply: reply
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Chat failed'
+        });
+    }
+});
+
+// ================================================================
+// DAILY PROFIT CRON JOB (Runs at midnight)
+// ================================================================
+cron.schedule('0 0 * * *', async function () {
+    console.log('🕛 Running daily profit distribution...');
+
+    try {
+        var eligibleUsers = await User.find({
+            'activePlan.planId': { $exists: true },
+            'activePlan.endDate': { $gte: new Date() },
+            'activePlan.profitDays': { $lt: 60 },
+            status: 'active'
+        });
+
+        var profitCount = 0;
+
+        for (var i = 0; i < eligibleUsers.length; i++) {
+            var user = eligibleUsers[i];
+
+            if (user.activePlan && user.activePlan.profitDays < 60) {
+                var profitAmount = user.activePlan.dailyProfit;
+
+                user.balance += profitAmount;
+                user.totalEarned += profitAmount;
+                user.activePlan.profitDays += 1;
+
+                await user.save();
+
+                await new Transaction({
+                    userId: user._id,
+                    username: user.username,
+                    type: 'profit',
+                    amount: profitAmount,
+                    status: 'approved'
+                }).save();
+
+                profitCount++;
+            }
+        }
+
+        console.log('✅ Daily profit distributed to ' + profitCount + ' users');
+
+    } catch (error) {
+        console.error('❌ Profit distribution failed:', error.message);
+    }
+});
+
+console.log('⏰ Daily profit cron job scheduled for midnight (00:00)');
+
+// ================================================================
+// DATABASE INITIALIZATION
+// ================================================================
+async function initializeDatabase() {
+    console.log('📦 Initializing database...');
+
+    try {
+        // Initialize Plans
+        var planCount = await Plan.countDocuments();
+        if (planCount === 0) {
+            var defaultPlans = [
+                { planId: 1, name: 'Starter', amount: 360, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 2, name: 'Silver', amount: 860, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 3, name: 'Gold', amount: 1460, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 4, name: 'Platinum', amount: 2660, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 5, name: 'Diamond', amount: 4260, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 6, name: 'Ruby', amount: 6060, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 7, name: 'Emerald', amount: 9060, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 8, name: 'Sapphire', amount: 14060, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 9, name: 'Titanium', amount: 21060, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 10, name: 'Master', amount: 30000, dailyProfit: 11, duration: 60, isActive: true },
+                { planId: 11, name: 'Custom', amount: 50000, dailyProfit: 11, duration: 60, isActive: true }
+            ];
+            await Plan.insertMany(defaultPlans);
+            console.log('✅ Default plans created: 11 plans');
+        }
+
+        // Initialize Settings
+        var settingsCount = await Setting.countDocuments();
+        if (settingsCount === 0) {
+            var defaultSettings = [
+                { key: 'referralBonus', value: 11 },
+                { key: 'minWithdraw', value: 30 },
+                { key: 'maxWithdraw', value: 500000 },
+                { key: 'maxDailyWithdraw', value: 100000 },
+                { key: 'easypaisaNumber', value: '03000000000' },
+                { key: 'easypaisaTitle', value: 'Profit 24' },
+                { key: 'jazzcashNumber', value: '03000000000' },
+                { key: 'jazzcashTitle', value: 'Profit 24' },
+                { key: 'depositEnabled', value: true },
+                { key: 'withdrawEnabled', value: true },
+                { key: 'fundTransferEnabled', value: true },
+                { key: 'fundTransferFee', value: 0 }
+            ];
+            await Setting.insertMany(defaultSettings);
+            console.log('✅ Default settings created: 12 settings');
+        }
+
+        // Initialize FAQs
+        var faqCount = await FAQ.countDocuments();
+        if (faqCount === 0) {
+            var defaultFaqs = [
+                {
+                    question: 'What is Profit 24?',
+                    answer: 'Profit 24 is a secure investment platform where you can invest your money and earn 11% daily profit for 60 days. We offer 11 different investment plans starting from PKR 360 up to PKR 50,000+.',
+                    order: 1
+                },
+                {
+                    question: 'How to create an account?',
+                    answer: 'Click on "Create Account", enter your username, WhatsApp number, and password. You can also add a referral code if someone invited you. Click Sign Up and your account will be created instantly. Your PID is auto-generated from your WhatsApp number.',
+                    order: 2
+                },
+                {
+                    question: 'How to invest?',
+                    answer: '1) Login to your account 2) Go to Deposit 3) Select an investment plan 4) Choose payment method (Easypaisa or JazzCash) 5) Send the payment to the given account 6) Upload screenshot with Transaction ID 7) Wait for admin approval.',
+                    order: 3
+                },
+                {
+                    question: 'How to make a deposit?',
+                    answer: 'Select your plan, choose Easypaisa or JazzCash, send the exact plan amount to the provided account number, save the transaction ID, upload payment screenshot, and submit. Your deposit will be reviewed by admin.',
+                    order: 4
+                },
+                {
+                    question: 'What payment methods are accepted?',
+                    answer: 'We accept Easypaisa and JazzCash. You can choose either method when making a deposit. Account details are provided on the deposit page.',
+                    order: 5
+                },
+                {
+                    question: 'How long does deposit approval take?',
+                    answer: 'Deposits are usually approved within a few minutes to a few hours. You will receive your first profit immediately after approval. You will be notified via the platform.',
+                    order: 6
+                },
+                {
+                    question: 'How do I withdraw funds?',
+                    answer: 'Go to Withdraw, select payment method (Easypaisa/JazzCash), enter your account number and account title, enter the amount (Min: PKR 30), and submit. Amount will be deducted from balance immediately and processed by admin.',
+                    order: 7
+                },
+                {
+                    question: 'What is the minimum withdrawal?',
+                    answer: 'Minimum withdrawal is PKR 30 per request. Maximum withdrawal is PKR 500,000 per request with a daily limit of PKR 100,000.',
+                    order: 8
+                },
+                {
+                    question: 'How does the referral system work?',
+                    answer: 'Share your PID code. When someone joins using your referral and makes a deposit, you earn 11% of their investment amount as bonus instantly. Example: If they invest PKR 10,000, you get PKR 1,100 bonus.',
+                    order: 9
+                },
+                {
+                    question: 'When are profits credited?',
+                    answer: 'Your first day profit is credited immediately after deposit approval. After that, daily profit is credited automatically at 12:00 AM midnight for 60 days.',
+                    order: 10
+                },
+                {
+                    question: 'How is profit calculated?',
+                    answer: 'You earn 11% daily profit on your investment amount. Example: PKR 360 investment = PKR 39.60 daily profit × 60 days = PKR 2,376 total return.',
+                    order: 11
+                },
+                {
+                    question: 'How long does the investment plan last?',
+                    answer: 'All investment plans run for 60 days. You receive daily profit for the entire 60-day period. After 60 days, the plan expires and you can invest in a new plan.',
+                    order: 12
+                },
+                {
+                    question: 'Can I have multiple active plans?',
+                    answer: 'No, you can only have one active plan at a time. You must wait for your current plan to complete (60 days) before investing in a new plan.',
+                    order: 13
+                },
+                {
+                    question: 'What if my deposit is rejected?',
+                    answer: 'If your deposit is rejected by admin, your investment will not be activated. Please contact support on WhatsApp for assistance.',
+                    order: 14
+                },
+                {
+                    question: 'What if my withdrawal is rejected?',
+                    answer: 'If your withdrawal is rejected, the amount will be automatically refunded to your balance after 1 hour.',
+                    order: 15
+                },
+                {
+                    question: 'How to check my balance?',
+                    answer: 'Your balance is shown on the Dashboard right after login. You can see: Total Balance, Today\'s Profit, Total Invested, Total Earned, Referral Bonus, Pending Deposits, Pending Withdrawals, and Total Withdrawn.',
+                    order: 16
+                },
+                {
+                    question: 'Is my account secure?',
+                    answer: 'Yes, your account is protected with encrypted password and secure JWT authentication. Never share your password with anyone.',
+                    order: 17
+                },
+                {
+                    question: 'How to contact support?',
+                    answer: 'Click the Support button on the website for: Contact Admin via WhatsApp (+258867532400), Join Support Channel, or use Live Chat for instant answers.',
+                    order: 18
+                },
+                {
+                    question: 'What are the platform rules?',
+                    answer: 'One account per user, one active plan at a time, valid transaction ID required for deposits, accurate account details for withdrawals, referral bonus only on first investment of referred users.',
+                    order: 19
+                },
+                {
+                    question: 'How to use Fund Transfer?',
+                    answer: 'Go to Fund Transfer, enter the receiver\'s PID and amount, verify the receiver details, and confirm. Transfer is instant with no admin approval. You need an active plan to transfer.',
+                    order: 20
+                }
+            ];
+            await FAQ.insertMany(defaultFaqs);
+            console.log('✅ Default FAQs created: 20 FAQs');
+        }
+
+        console.log('📦 Database initialization complete!');
+
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error.message);
+    }
+}
+
+// ================================================================
+// START SERVER
+// ================================================================
+var MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/profit24_db';
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(async function () {
+        console.log('✅ MongoDB connected successfully');
+        console.log('📦 Database:', mongoose.connection.db.databaseName);
+
+        await initializeDatabase();
+        initTelegramBot();
+
+        app.listen(PORT, function () {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('🚀 Profit 24 Server Started Successfully!');
+            console.log('📡 Port: ' + PORT);
+            console.log('🌐 URL: http://localhost:' + PORT);
+            console.log('📱 API: http://localhost:' + PORT + '/api/health');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        });
+    })
+    .catch(function (error) {
+        console.error('❌ MongoDB connection failed:', error.message);
+        process.exit(1);
+    });
+
+// Error handling
+process.on('uncaughtException', function (error) {
+    console.error('❌ Uncaught Exception:', error.message);
+});
+
+process.on('unhandledRejection', function (error) {
+    console.error('❌ Unhandled Rejection:', error.message);
+});
