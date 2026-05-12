@@ -9,7 +9,9 @@
 </head>
 <body>
 
+<!-- ============================================================ -->
 <!-- AUTH SECTION -->
+<!-- ============================================================ -->
 <div id="authSection">
     <div class="auth-card" id="loginCard">
         <div class="logo">💎 Profit 24</div>
@@ -31,7 +33,9 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- DASHBOARD -->
+<!-- ============================================================ -->
 <div id="dashSection" class="container hidden">
     <div class="glass header-card">
         <h2 id="dashUser">👋 Welcome</h2>
@@ -75,25 +79,41 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- PLANS PAGE -->
+<!-- ============================================================ -->
 <div id="plansSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">📋 Select Investment Plan</h2>
     <div class="plans-grid" id="plansGrid"></div>
 </div>
 
+<!-- ============================================================ -->
 <!-- PAYMENT METHOD PAGE -->
+<!-- ============================================================ -->
 <div id="paymentSection" class="container hidden">
     <button class="back-btn" onclick="goToPlans()">← Back</button>
     <h2 class="page-title">🏦 Select Payment Method</h2>
-    <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px;">Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong></p>
+    <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:25px;">
+        Plan: <strong id="payPlanName"></strong> | Amount: <strong>PKR <span id="payPlanAmt"></span></strong>
+    </p>
     <div class="pay-grid">
-        <div class="pay-card" onclick="selectPaymentMethod('easypaisa')"><div class="pay-icon">📱</div><div class="pay-name">Easypaisa</div><div class="pay-info">Send payment via Easypaisa</div></div>
-        <div class="pay-card" onclick="selectPaymentMethod('jazzcash')"><div class="pay-icon">💼</div><div class="pay-name">JazzCash</div><div class="pay-info">Send payment via JazzCash</div></div>
+        <div class="pay-card" onclick="selectPaymentMethod('easypaisa')">
+            <div class="pay-icon">📱</div>
+            <div class="pay-name">Easypaisa</div>
+            <div class="pay-info">Send payment via Easypaisa</div>
+        </div>
+        <div class="pay-card" onclick="selectPaymentMethod('jazzcash')">
+            <div class="pay-icon">💼</div>
+            <div class="pay-name">JazzCash</div>
+            <div class="pay-info">Send payment via JazzCash</div>
+        </div>
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- DEPOSIT FORM -->
+<!-- ============================================================ -->
 <div id="depositSection" class="container hidden">
     <button class="back-btn" onclick="goToPayment()">← Back</button>
     <div class="glass form-card">
@@ -106,16 +126,22 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- WITHDRAW PAGE -->
+<!-- ============================================================ -->
 <div id="withdrawSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card">
         <h2>💸 Withdraw Funds</h2>
-        <div class="balance-display" style="margin:15px 0;text-align:center;">
+        <div style="margin:15px 0;text-align:center;">
             <span style="color:rgba(255,255,255,0.6);">Available Balance:</span>
             <span style="font-size:28px;font-weight:900;color:#fbbf24;display:block;" id="wdBalance">PKR 0.00</span>
         </div>
-        <select class="inp" id="wdType"><option value="">-- Select Method --</option><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option></select>
+        <select class="inp" id="wdType">
+            <option value="">-- Select Method --</option>
+            <option value="easypaisa">Easypaisa</option>
+            <option value="jazzcash">JazzCash</option>
+        </select>
         <input type="text" class="inp" id="wdNum" placeholder="Account Number">
         <input type="text" class="inp" id="wdTitle" placeholder="Account Title">
         <input type="number" class="inp" id="wdAmt" placeholder="Amount (Min: 30)">
@@ -123,12 +149,14 @@
     </div>
 </div>
 
-<!-- FUND TRANSFER -->
+<!-- ============================================================ -->
+<!-- FUND TRANSFER PAGE -->
+<!-- ============================================================ -->
 <div id="transferSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card">
         <h2>🔄 Fund Transfer</h2>
-        <div class="balance-display" style="margin:15px 0;text-align:center;">
+        <div style="margin:15px 0;text-align:center;">
             <span style="color:rgba(255,255,255,0.6);">Your Balance:</span>
             <span style="font-size:28px;font-weight:900;color:#fbbf24;display:block;" id="tfBalance">PKR 0.00</span>
         </div>
@@ -139,14 +167,18 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- HISTORY PAGE -->
+<!-- ============================================================ -->
 <div id="historySection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title" id="historyTitle"></h2>
     <div id="historyContent"></div>
 </div>
 
-<!-- PROFILE -->
+<!-- ============================================================ -->
+<!-- PROFILE PAGE -->
+<!-- ============================================================ -->
 <div id="profileSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <div class="glass form-card" style="text-align:center;">
@@ -158,7 +190,9 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- LEADERBOARD -->
+<!-- ============================================================ -->
 <div id="leaderboardSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">🏆 Leaderboard</h2>
@@ -166,43 +200,67 @@
     <div class="glass form-card" style="margin-top:15px;"><h3>🔗 Top Referrers</h3><div id="topRef"></div></div>
 </div>
 
+<!-- ============================================================ -->
 <!-- FAQ -->
+<!-- ============================================================ -->
 <div id="faqSection" class="container hidden">
     <button class="back-btn" onclick="goToDashboard()">← Back</button>
     <h2 class="page-title">❓ Frequently Asked Questions</h2>
     <div id="faqContent"></div>
 </div>
 
+<!-- ============================================================ -->
 <!-- SUPPORT MODAL -->
+<!-- ============================================================ -->
 <div id="supportModal" class="modal hidden">
     <div class="modal-content glass">
         <span class="modal-close" onclick="closeSupportModal()">✕</span>
         <h2 style="text-align:center;margin-bottom:25px;">💬 Support</h2>
         <div class="support-options">
             <a href="https://wa.me/258867532400" target="_blank" class="support-card">
-                <div class="support-icon">📞</div><div class="support-name">Contact Admin</div><div class="support-info">Chat on WhatsApp</div>
+                <div class="support-icon">📞</div>
+                <div class="support-name">Contact Admin</div>
+                <div class="support-info">Chat on WhatsApp</div>
             </a>
             <a href="https://whatsapp.com/channel/0029VbCIujEHAdNb1hxO4t2E" target="_blank" class="support-card">
-                <div class="support-icon">📢</div><div class="support-name">Support Channel</div><div class="support-info">Join WhatsApp Channel</div>
+                <div class="support-icon">📢</div>
+                <div class="support-name">Support Channel</div>
+                <div class="support-info">Join WhatsApp Channel</div>
             </a>
             <div class="support-card" onclick="openChatWidget()">
-                <div class="support-icon">💬</div><div class="support-name">Live Chat</div><div class="support-info">AI Assistant</div>
+                <div class="support-icon">💬</div>
+                <div class="support-name">Live Chat</div>
+                <div class="support-info">AI Assistant</div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- CHAT WIDGET -->
+<!-- ============================================================ -->
 <div id="chatWidget" class="chat-widget hidden">
-    <div class="chat-header"><span>💬 Profit 24 Assistant</span><span onclick="closeChatWidget()" style="cursor:pointer;">✕</span></div>
-    <div class="chat-body" id="chatBody"><div class="chat-msg bot">Hello! 👋 Ask me anything about Profit 24!</div></div>
+    <div class="chat-header">
+        <span>💬 Profit 24 Assistant</span>
+        <span onclick="closeChatWidget()" style="cursor:pointer;">✕</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-msg bot">Hello! 👋 I'm the Profit 24 assistant. Ask me anything about the platform!</div>
+    </div>
     <div class="chat-footer">
         <input type="text" id="chatInput" class="chat-input" placeholder="Type your question..." onkeypress="if(event.key==='Enter')sendChatMessage()">
-        <button class="btn-sm" onclick="sendChatMessage()">Send</button>
+        <button class="btn-sm" onclick="sendChatMessage()" style="flex-shrink:0;">Send</button>
     </div>
 </div>
 
-<a href="https://wa.me/258867532400" class="wa-float" target="_blank">💬</a>
+<!-- ============================================================ -->
+<!-- WHATSAPP FLOAT BUTTON -->
+<!-- ============================================================ -->
+<a href="https://wa.me/258867532400" class="wa-float" target="_blank">🥏</a>
+
+<!-- ============================================================ -->
+<!-- TOAST NOTIFICATION -->
+<!-- ============================================================ -->
 <div class="toast" id="toast"></div>
 
 <script src="js/app.js"></script>
